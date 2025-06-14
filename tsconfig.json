@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "outDir": "./built",
+    "allowJs": true,
+    "target": "es2022",
+    "moduleResolution": "bundler",
+    "module": "es2020"
+  },
+  "include": ["app.ts", "./src/**/*"]
+}
