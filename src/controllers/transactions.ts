@@ -1,26 +1,75 @@
 import { v4 as uuidv4 } from "uuid";
-import { mockedTransactions } from "../mockedItems";
+import { transactions } from "../mocked/transactions";
+import { FastifyReply, FastifyRequest, RouteHandlerMethod } from "fastify";
+import { Transaction } from "../types/transaction";
 
-export const getTransactions = (req, reply) => reply.send(mockedTransactions);
+type RequestParams = {
+  id: string;
+};
 
-export const getTransaction = (req, reply) => {
+export const getTransactions: RouteHandlerMethod = (
+  req: FastifyRequest,
+  reply: FastifyReply
+) => {
+  const { user } = req;
+  // TODO: Use database
+  const userTransactions = transactions.filter((tr) => tr.userId === user.id);
+  reply.send(userTransactions);
+};
+
+export const getTransaction: RouteHandlerMethod = (
+  req: FastifyRequest<{ Params: RequestParams }>,
+  reply: FastifyReply
+) => {
   const { id } = req.params;
-  const transaction = mockedTransactions.find((i) => i.id === id);
+  const { user } = req;
+  // TODO: Use database
+  const transaction = transactions.find(
+    (tr) => tr.id === id && tr.userId === user.id
+  );
+  if (!transaction) {
+    return reply.code(404).send({
+      error: "Not Found",
+      message: `Transaction with id ${id} not found`,
+      statusCode: 404,
+    });
+  }
   reply.send(transaction);
 };
 
-export const createTransaction = (req, reply) => {
-  const newTransaction = req.body;
-  newTransaction.id = uuidv4();
-  newTransaction.createdAt = new Date().toISOString();
-  newTransaction.updatedAt = new Date().toISOString();
-  mockedTransactions.push(newTransaction);
+type CreateTransactionBody = Omit<
+  Transaction,
+  "id" | "userId" | "createdAt" | "updatedAt"
+>;
+
+export const createTransaction = (
+  req: FastifyRequest<{ Body: CreateTransactionBody }>,
+  reply: FastifyReply
+) => {
+  const { user } = req;
+  const newTransaction: Transaction = {
+    // TODO: Sanitize the request body to only include fields that can be created
+    ...req.body,
+    id: uuidv4(),
+    userId: user.id,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  // TODO: Use database
+  transactions.push(newTransaction);
   reply.code(201).send(newTransaction);
 };
 
-export const deleteTransaction = (req, reply) => {
+export const deleteTransaction = (
+  req: FastifyRequest<{ Params: RequestParams }>,
+  reply: FastifyReply
+) => {
   const { id } = req.params;
-  const index = mockedTransactions.findIndex((tr) => tr.id === id);
+  const { user } = req;
+  const index = transactions.findIndex(
+    (tr) => tr.id === id && tr.userId === user.id
+  );
+
   if (index === -1) {
     return reply.code(404).send({
       error: "Not Found",
@@ -28,13 +77,20 @@ export const deleteTransaction = (req, reply) => {
       statusCode: 404,
     });
   }
-  mockedTransactions.splice(index, 1);
+  // TODO: Use database
+  transactions.splice(index, 1);
   reply.code(204).send();
 };
 
-export const editTransaction = (req, reply) => {
+export const editTransaction = (
+  req: FastifyRequest<{ Params: RequestParams; Body: Partial<Transaction> }>,
+  reply: FastifyReply
+) => {
   const { id } = req.params;
-  const index = mockedTransactions.findIndex((tr) => tr.id === id);
+  const { user } = req;
+  const index = transactions.findIndex(
+    (tr) => tr.id === id && tr.userId === user.id
+  );
   if (index === -1) {
     return reply.code(404).send({
       error: "Not Found",
@@ -44,9 +100,9 @@ export const editTransaction = (req, reply) => {
   }
   // TODO: Sanitize the request body to only include fields that can be updated
   // TODO: Make sure the the values can't cause SQL injection or other security issues
-  const foundTransaction = mockedTransactions[index];
+  const foundTransaction = transactions[index];
   const updatedTransaction = { ...foundTransaction, ...req.body };
   updatedTransaction.updatedAt = new Date().toISOString();
-  mockedTransactions[index] = updatedTransaction;
+  transactions[index] = updatedTransaction;
   reply.code(204).send();
 };

@@ -1,6 +1,6 @@
-import { Transaction } from "./types/transaction";
+import { Transaction } from "../types/transaction";
 
-export const mockedTransactions: Transaction[] = [
+export const transactions: Transaction[] = [
   {
     id: "1",
     userId: "1",

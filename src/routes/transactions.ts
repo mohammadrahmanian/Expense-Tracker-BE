@@ -57,7 +57,7 @@ const createTransactionOpts = {
       },
     },
     response: {
-      201: { ref: "transactionSchema#" },
+      201: { $ref: "transactionSchema#" },
       400: {
         type: "object",
         properties: {
@@ -126,19 +126,34 @@ const editTransactionOpts = {
   handler: editTransaction,
 };
 
-export const transactionsRoute = (fastify: FastifyInstance, options, done) => {
-  fastify.get("/transactions", getTransactionsOpts);
+export const transactionsRoutes = (fastify: FastifyInstance, options, done) => {
+  fastify.get("/transactions", {
+    ...getTransactionsOpts,
+    preHandler: fastify.auth([fastify.verifyToken]),
+  });
 
   fastify.get<{
     Params: TransactionParams;
     Reply: Transaction;
-  }>("/transactions/:id", getTransactionOpts);
+  }>("/transactions/:id", {
+    ...getTransactionOpts,
+    preHandler: fastify.auth([fastify.verifyToken]),
+  });
 
-  fastify.post("/transactions", createTransactionOpts);
+  fastify.post("/transactions", {
+    ...createTransactionOpts,
+    preHandler: fastify.auth([fastify.verifyToken]),
+  });
 
-  fastify.delete("/transactions/:id", deleteTransactionOpts);
+  fastify.delete("/transactions/:id", {
+    ...deleteTransactionOpts,
+    preHandler: fastify.auth([fastify.verifyToken]),
+  });
 
-  fastify.put("/transactions/:id", editTransactionOpts);
+  fastify.put("/transactions/:id", {
+    ...editTransactionOpts,
+    preHandler: fastify.auth([fastify.verifyToken]),
+  });
 
   done();
 };
