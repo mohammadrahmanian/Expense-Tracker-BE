@@ -1,8 +1,13 @@
 import Fastify from "fastify";
 import FastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
-import { transactionsRoute } from "./src/routes/transactions";
+import FastifyAuth from "@fastify/auth";
+
+import { transactionsRoutes } from "./src/routes/transactions";
 import { transactionSchema } from "./src/schemas/transaction";
+import { userSchema } from "./src/schemas/user";
+import { verifyToken } from "./src/plugins/auth";
+import { usersRoutes } from "./src/routes/users";
 
 const PORT = 5000;
 
@@ -19,13 +24,18 @@ fastify.register(FastifySwagger, {
     },
   },
 });
+
 fastify.register(fastifySwaggerUi, {
   routePrefix: "/docs",
 });
 
-fastify.register(transactionsRoute);
+fastify.decorate("verifyToken", verifyToken).register(FastifyAuth);
+fastify.register(transactionsRoutes);
+
+fastify.register(usersRoutes);
 
 fastify.addSchema(transactionSchema);
+fastify.addSchema(userSchema);
 
 const start = async () => {
   try {
