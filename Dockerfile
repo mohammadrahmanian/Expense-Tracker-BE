@@ -11,6 +11,8 @@ WORKDIR /app
 
 # Set production environment
 ENV NODE_ENV="production"
+ENV PORT=5000
+ENV HOST="0.0.0.0"
 
 
 # Throw-away build stage to reduce size of final image
@@ -18,7 +20,8 @@ FROM base AS build
 
 # Install packages needed to build node modules
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
+    apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3 && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install node modules
 COPY package-lock.json package.json ./
@@ -35,5 +38,5 @@ FROM base
 COPY --from=build /app /app
 
 # Start the server by default, this can be overwritten at runtime
-EXPOSE 5000
+EXPOSE $PORT
 CMD [ "npm", "run", "start" ]
