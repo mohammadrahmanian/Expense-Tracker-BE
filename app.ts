@@ -10,6 +10,7 @@ import { verifyToken } from "./src/plugins/auth";
 import { usersRoutes } from "./src/routes/users";
 
 const PORT = 5000;
+const HOST = "0.0.0.0";
 
 const fastify = Fastify({
   logger: true,
@@ -39,7 +40,7 @@ fastify.addSchema(userSchema);
 
 const start = async () => {
   try {
-    await fastify.listen({ port: PORT });
+    await fastify.listen({ host: HOST, port: PORT });
   } catch (error) {
     fastify.log.error(error);
     process.exit(1);
