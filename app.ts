@@ -9,7 +9,8 @@ import { userSchema } from "./src/schemas/user";
 import { verifyToken } from "./src/plugins/auth";
 import { usersRoutes } from "./src/routes/users";
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || "0.0.0.0";
 
 const fastify = Fastify({
   logger: true,
@@ -39,7 +40,9 @@ fastify.addSchema(userSchema);
 
 const start = async () => {
   try {
-    await fastify.listen({ port: PORT });
+    // TODO: Add env variable zod validation
+    const port = Number(PORT);
+    await fastify.listen({ host: HOST, port });
   } catch (error) {
     fastify.log.error(error);
     process.exit(1);

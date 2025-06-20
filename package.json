@@ -7,8 +7,8 @@
     "test": "test"
   },
   "scripts": {
-    "start": "node app.ts",
-    "dev": "tsx --watch app.ts"
+    "start": "tsx app.ts",
+    "dev": "PORT=5003 HOST='0.0.0.0' tsx --watch app.ts"
   },
   "type": "module",
   "keywords": [],
@@ -27,11 +27,12 @@
     "fastify-cli": "^7.4.0",
     "fastify-plugin": "^5.0.0",
     "jsonwebtoken": "^9.0.2",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "tsx": "^4.19.4"
   },
   "devDependencies": {
+    "@flydotio/dockerfile": "^0.7.10",
     "@types/node": "^22.15.29",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.19.4"
+    "ts-node": "^10.9.2"
   }
 }
