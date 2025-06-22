@@ -8,6 +8,8 @@ import { transactionSchema } from "./src/schemas/transaction";
 import { userSchema } from "./src/schemas/user";
 import { verifyToken } from "./src/plugins/auth";
 import { usersRoutes } from "./src/routes/users";
+import { categorySchema } from "./src/schemas/category";
+import { categoriesRoutes } from "./src/routes/categories";
 
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || "0.0.0.0";
@@ -31,11 +33,13 @@ fastify.register(fastifySwaggerUi, {
 });
 
 fastify.decorate("verifyToken", verifyToken).register(FastifyAuth);
-fastify.register(transactionsRoutes);
 
+fastify.register(transactionsRoutes);
+fastify.register(categoriesRoutes);
 fastify.register(usersRoutes);
 
 fastify.addSchema(transactionSchema);
+fastify.addSchema(categorySchema);
 fastify.addSchema(userSchema);
 
 const start = async () => {

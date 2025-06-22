@@ -1,0 +1,66 @@
+import { Category } from "../types/category";
+
+export const categories: Category[] = [
+  {
+    id: "1",
+    userId: "1",
+    name: "Groceries",
+    type: "expense",
+    description: "Expenses related to food and household supplies",
+    parentId: null,
+    createdAt: new Date("2023-01-01T10:00:00Z"),
+    updatedAt: new Date("2023-01-01T10:00:00Z"),
+  },
+  {
+    id: "2",
+    userId: "1",
+    name: "Utilities",
+    type: "expense",
+    description: "Monthly bills for services like electricity, water, and gas",
+    parentId: null,
+    createdAt: new Date("2023-01-02T10:00:00Z"),
+    updatedAt: new Date("2023-01-02T10:00:00Z"),
+  },
+  {
+    id: "3",
+    userId: "1",
+    name: "Entertainment",
+    type: "expense",
+    description:
+      "Expenses for leisure activities such as movies, concerts, etc.",
+    parentId: null,
+    createdAt: new Date("2023-01-03T10:00:00Z"),
+    updatedAt: new Date("2023-01-03T10:00:00Z"),
+  },
+  {
+    id: "4",
+    userId: "1",
+    name: "Salary",
+    type: "income",
+    description: "Monthly salary from employment",
+    parentId: null,
+    createdAt: new Date("2023-01-04T10:00:00Z"),
+    updatedAt: new Date("2023-01-04T10:00:00Z"),
+  },
+  {
+    id: "5",
+    userId: "1",
+    name: "Freelance Work",
+    type: "income",
+    description: "Income from freelance projects and gigs",
+    parentId: null,
+    createdAt: new Date("2023-01-05T10:00:00Z"),
+    updatedAt: new Date("2023-01-05T10:00:00Z"),
+  },
+  {
+    id: "6",
+    userId: "1",
+    name: "Investments",
+    type: "income",
+    description:
+      "Income generated from investments such as stocks, bonds, etc.",
+    parentId: null,
+    createdAt: new Date("2023-01-06T10:00:00Z"),
+    updatedAt: new Date("2023-01-06T10:00:00Z"),
+  },
+];
