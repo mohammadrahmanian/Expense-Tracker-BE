@@ -7,6 +7,11 @@ export const categorySchema = {
       format: "uuid",
       description: "Unique identifier for the category",
     },
+    userId: {
+      type: "string",
+      format: "uuid",
+      description: "ID of the user who owns the category",
+    },
     name: {
       type: "string",
       description: "Name of the category",
