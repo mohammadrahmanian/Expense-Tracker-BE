@@ -33,7 +33,7 @@ Authorization: Bearer <jwt token>
 ### Update a transaction by id
 PUT http://localhost:{{PORT}}/transactions/97f77f85-c7b2-4164-807c-5951941de011 HTTP/1.1
 Content-Type: application/json
-Authorization: Authorization: Bearer <jwt token>
+Authorization: Bearer <jwt token>
 
 {
   "amount": 15.00
