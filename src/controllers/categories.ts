@@ -51,24 +51,37 @@ export const createCategory = (
   reply.status(201).send(newCategory);
 };
 
+type EditCategoryBody = Partial<Category>;
+
 export const editCategory = (
-  req: FastifyRequest<{ Body: Partial<Category>; Params: { id: string } }>,
+  req: FastifyRequest<{ Body: EditCategoryBody; Params: { id: string } }>,
   reply: FastifyReply
 ) => {
   const { user } = req;
   const { id } = req.params;
+
   const index = categories.findIndex(
     (cat) => cat.id === id && cat.userId === user.id
   );
   if (index === -1) {
     return reply.status(404).send({ error: "Category not found" });
   }
+
   // TODO: Validate and sanitize the request body
+  const {
+    id: _,
+    userId: __,
+    createdAt: ___,
+    updatedAt: ____,
+    ...allowedFields
+  } = req.body;
+
   const updatedCategory: Category = {
     ...categories[index],
-    ...req.body,
+    ...allowedFields,
     updatedAt: new Date(),
   };
+
   categories[index] = updatedCategory;
   reply.code(204).send();
 };
