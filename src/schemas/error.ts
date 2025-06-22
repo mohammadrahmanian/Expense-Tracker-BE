@@ -6,5 +6,4 @@ export const errorSchema = {
     message: { type: "string" },
     statusCode: { type: "number" },
   },
-  required: ["error", "message", "statusCode"],
 };
