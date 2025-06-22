@@ -30,14 +30,7 @@ const getCategoryOpts = {
     },
     response: {
       200: { $ref: "categorySchema#" },
-      404: {
-        type: "object",
-        properties: {
-          error: { type: "string" },
-          message: { type: "string" },
-          statusCode: { type: "number" },
-        },
-      },
+      404: { $ref: "errorSchema#" },
     },
   },
   handler: getCategoryById,
@@ -57,22 +50,8 @@ const createCategoryOpts = {
     },
     response: {
       201: { $ref: "categorySchema#" },
-      400: {
-        type: "object",
-        properties: {
-          error: { type: "string" },
-          message: { type: "string" },
-          statusCode: { type: "number" },
-        },
-      },
-      401: {
-        type: "object",
-        properties: {
-          error: { type: "string" },
-          message: { type: "string" },
-          statusCode: { type: "number" },
-        },
-      },
+      400: { $ref: "errorSchema#" },
+      401: { $ref: "errorSchema#" },
     },
   },
   handler: createCategory,
@@ -91,14 +70,7 @@ const deleteCategoryOpts = {
       204: {
         type: "null",
       },
-      404: {
-        type: "object",
-        properties: {
-          error: { type: "string" },
-          message: { type: "string" },
-          statusCode: { type: "number" },
-        },
-      },
+      404: { $ref: "errorSchema#" },
     },
   },
   handler: deleteCategory,
@@ -126,14 +98,7 @@ const editCategoryOpts = {
       204: {
         type: "null",
       },
-      404: {
-        type: "object",
-        properties: {
-          error: { type: "string" },
-          message: { type: "string" },
-          statusCode: { type: "number" },
-        },
-      },
+      404: { $ref: "errorSchema#" },
     },
   },
   handler: editCategory,

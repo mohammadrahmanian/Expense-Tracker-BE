@@ -10,6 +10,7 @@ import { verifyToken } from "./src/plugins/auth";
 import { usersRoutes } from "./src/routes/users";
 import { categorySchema } from "./src/schemas/category";
 import { categoriesRoutes } from "./src/routes/categories";
+import { errorSchema } from "./src/schemas/error";
 
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || "0.0.0.0";
@@ -41,6 +42,7 @@ fastify.register(usersRoutes);
 fastify.addSchema(transactionSchema);
 fastify.addSchema(categorySchema);
 fastify.addSchema(userSchema);
+fastify.addSchema(errorSchema);
 
 const start = async () => {
   try {
