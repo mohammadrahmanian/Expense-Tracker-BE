@@ -29,14 +29,7 @@ const getTransactionOpts = {
   schema: {
     response: {
       200: { $ref: "transactionSchema#" },
-      404: {
-        type: "object",
-        properties: {
-          error: { type: "string" },
-          message: { type: "string" },
-          statusCode: { type: "number" },
-        },
-      },
+      404: { $ref: "errorSchema#" },
     },
   },
   handler: getTransaction,
@@ -58,14 +51,7 @@ const createTransactionOpts = {
     },
     response: {
       201: { $ref: "transactionSchema#" },
-      400: {
-        type: "object",
-        properties: {
-          error: { type: "string" },
-          message: { type: "string" },
-          statusCode: { type: "number" },
-        },
-      },
+      400: { $ref: "errorSchema#" },
     },
   },
   handler: createTransaction,
@@ -77,14 +63,7 @@ const deleteTransactionOpts = {
       204: {
         type: "null",
       },
-      404: {
-        type: "object",
-        properties: {
-          error: { type: "string" },
-          message: { type: "string" },
-          statusCode: { type: "number" },
-        },
-      },
+      404: { $ref: "errorSchema#" },
     },
     params: {
       type: "object",
@@ -113,14 +92,7 @@ const editTransactionOpts = {
       204: {
         type: "null",
       },
-      404: {
-        type: "object",
-        properties: {
-          error: { type: "string" },
-          message: { type: "string" },
-          statusCode: { type: "number" },
-        },
-      },
+      404: { $ref: "errorSchema#" },
     },
   },
   handler: editTransaction,
