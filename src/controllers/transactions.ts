@@ -101,7 +101,16 @@ export const editTransaction = (
   // TODO: Sanitize the request body to only include fields that can be updated
   // TODO: Make sure the the values can't cause SQL injection or other security issues
   const foundTransaction = transactions[index];
-  const updatedTransaction = { ...foundTransaction, ...req.body };
+
+  const {
+    id: _,
+    userId: __,
+    createdAt: ___,
+    updatedAt: ____,
+    ...allowedProperties
+  } = req.body;
+
+  const updatedTransaction = { ...foundTransaction, ...allowedProperties };
   updatedTransaction.updatedAt = new Date().toISOString();
   transactions[index] = updatedTransaction;
   reply.code(204).send();
