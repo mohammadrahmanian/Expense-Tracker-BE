@@ -4,12 +4,10 @@ export const categorySchema = {
   properties: {
     id: {
       type: "string",
-      format: "uuid",
       description: "Unique identifier for the category",
     },
     userId: {
       type: "string",
-      format: "uuid",
       description: "ID of the user who owns the category",
     },
     name: {
@@ -18,7 +16,7 @@ export const categorySchema = {
     },
     type: {
       type: "string",
-      enum: ["income", "expense"],
+      enum: ["INCOME", "EXPENSE"],
       description: "Type of the category, either income or expense",
     },
     description: {
@@ -28,7 +26,6 @@ export const categorySchema = {
     },
     parentId: {
       type: "string",
-      format: "uuid",
       description: "ID of the parent category, if any",
       nullable: true,
     },

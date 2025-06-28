@@ -1,24 +1,27 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { v4 as uuidv4 } from "uuid";
 
-import { categories } from "../mocked/categories";
-import { Category } from "../types/category";
+import { Category } from "@prisma/client";
 
-export const getCategories = (req: FastifyRequest, reply: FastifyReply) => {
-  const { user } = req;
-  const userCategories = categories.filter((cat) => cat.userId === user.id);
+export const getCategories = async (
+  req: FastifyRequest,
+  reply: FastifyReply
+) => {
+  const { user, server } = req;
+  const userCategories = await server.prisma.category.findMany({
+    where: { userId: user.id },
+  });
   reply.send(userCategories);
 };
 
-export const getCategoryById = (
+export const getCategoryById = async (
   req: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply
 ) => {
   const { id } = req.params;
-  const { user } = req;
-  const category = categories.find(
-    (cat) => cat.id === id && cat.userId === user.id
-  );
+  const { user, server } = req;
+  const category = await server.prisma.category.findUnique({
+    where: { userId: user.id, id: id },
+  });
 
   if (!category) {
     return reply.status(404).send({ error: "Category not found" });
@@ -27,45 +30,11 @@ export const getCategoryById = (
   reply.send(category);
 };
 
-type CreateCategoryBody = Omit<
-  Category,
-  "id" | "userId" | "createdAt" | "updatedAt"
->;
-
-export const createCategory = (
-  req: FastifyRequest<{ Body: CreateCategoryBody }>,
+export const createCategory = async (
+  req: FastifyRequest<{ Body: Category }>,
   reply: FastifyReply
 ) => {
-  const { user } = req;
-
-  // TODO: Validate and sanitize the request body
-  const newCategory: Category = {
-    ...req.body,
-    id: uuidv4(),
-    userId: user.id,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  categories.push(newCategory);
-  reply.status(201).send(newCategory);
-};
-
-type EditCategoryBody = Partial<Category>;
-
-export const editCategory = (
-  req: FastifyRequest<{ Body: EditCategoryBody; Params: { id: string } }>,
-  reply: FastifyReply
-) => {
-  const { user } = req;
-  const { id } = req.params;
-
-  const index = categories.findIndex(
-    (cat) => cat.id === id && cat.userId === user.id
-  );
-  if (index === -1) {
-    return reply.status(404).send({ error: "Category not found" });
-  }
+  const { user, server } = req;
 
   // TODO: Validate and sanitize the request body
   const {
@@ -73,31 +42,92 @@ export const editCategory = (
     userId: __,
     createdAt: ___,
     updatedAt: ____,
+    parentId,
     ...allowedFields
   } = req.body;
 
-  const updatedCategory: Category = {
-    ...categories[index],
-    ...allowedFields,
-    updatedAt: new Date(),
-  };
+  try {
+    const category = await server.prisma.category.create({
+      data: {
+        ...allowedFields,
+        user: {
+          connect: { id: user.id },
+        },
+        parent: parentId
+          ? {
+              connect: { id: parentId },
+            }
+          : undefined,
+      },
+    });
 
-  categories[index] = updatedCategory;
+    if (!category) {
+      return reply.status(400).send({ error: "Failed to create category" });
+    }
+
+    reply.status(201).send(category);
+  } catch (error) {
+    console.error("Error creating category:", error);
+    reply.status(500).send({ error: "Internal server error" });
+  }
+};
+
+type EditCategoryBody = Partial<Category>;
+
+export const editCategory = async (
+  req: FastifyRequest<{ Body: EditCategoryBody; Params: { id: string } }>,
+  reply: FastifyReply
+) => {
+  const { user, server } = req;
+  const { id } = req.params;
+
+  // TODO: Validate and sanitize the request body
+  const {
+    id: _,
+    userId: __,
+    createdAt: ___,
+    updatedAt: ____,
+    parentId,
+    ...allowedFields
+  } = req.body;
+
+  const editedCategory = await server.prisma.category.update({
+    where: { id: id, userId: user.id },
+    data: {
+      ...allowedFields,
+      parent: parentId
+        ? {
+            connect: { id: parentId },
+          }
+        : undefined,
+    },
+  });
+
+  if (!editedCategory) {
+    return reply.status(404).send({ error: "Category not found" });
+  }
+
   reply.code(204).send();
 };
 
-export const deleteCategory = (
+export const deleteCategory = async (
   req: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply
 ) => {
   const { id } = req.params;
-  const { user } = req;
-  const index = categories.findIndex(
-    (cat) => cat.id === id && cat.userId === user.id
-  );
-  if (index === -1) {
-    return reply.status(404).send({ error: "Category not found" });
+  const { user, server } = req;
+  try {
+    const category = await server.prisma.category.delete({
+      where: { id: id, userId: user.id },
+    });
+
+    if (!category) {
+      return reply.status(404).send({ error: "Category not found" });
+    }
+
+    reply.code(204).send();
+  } catch (error) {
+    console.error("Error deleting category:", error);
+    reply.status(500).send({ error: "Internal server error" });
   }
-  categories.splice(index, 1);
-  reply.code(204).send();
 };
