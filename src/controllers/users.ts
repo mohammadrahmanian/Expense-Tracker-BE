@@ -8,12 +8,12 @@ const saltRounds = 10;
 
 export const createUser = async (
   req: FastifyRequest<{ Body: { email: string; password: string } }>,
-  reply: FastifyReply,
-  fastify: FastifyInstance
+  reply: FastifyReply
 ) => {
+  const { server } = req;
   const { email, password } = req.body;
   // TODO: Validate and sanitize input
-  const user = await fastify.prisma.user.findUnique({
+  const user = await server.prisma.user.findUnique({
     where: { email },
   });
 
@@ -27,7 +27,7 @@ export const createUser = async (
   try {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    const user = await fastify.prisma.user.create({
+    const user = await server.prisma.user.create({
       data: { email, password: hashedPassword },
     });
 
@@ -43,12 +43,12 @@ export const createUser = async (
 
 export const loginUser = async (
   req: FastifyRequest<{ Body: { email: string; password: string } }>,
-  reply: FastifyReply,
-  fastify: FastifyInstance
+  reply: FastifyReply
 ) => {
+  const { server } = req;
   const { email, password } = req.body;
   // TODO: Validate and sanitize input
-  const user = await fastify.prisma.user.findUnique({ where: { email } });
+  const user = await server.prisma.user.findUnique({ where: { email } });
   if (!user) {
     return reply.code(401).send({
       error: "Unauthorized",
