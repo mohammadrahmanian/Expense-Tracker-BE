@@ -5,6 +5,7 @@ export type Category = {
   type: "income" | "expense";
   description?: string;
   parentId?: string;
+  children: Category[];
   createdAt: Date;
   updatedAt: Date;
 };

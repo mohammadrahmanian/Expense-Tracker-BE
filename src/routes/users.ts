@@ -1,7 +1,7 @@
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { createUser, loginUser } from "../controllers/users";
 
-const createUserOpts = {
+const createUserOpts = (fastify: FastifyInstance) => ({
   schema: {
     response: {
       200: { $ref: "userSchema#" },
@@ -16,10 +16,13 @@ const createUserOpts = {
       },
     },
   },
-  handler: createUser,
-};
+  handler: (
+    req: FastifyRequest<{ Body: { email: string; password: string } }>,
+    reply: FastifyReply
+  ) => createUser(req, reply, fastify),
+});
 
-const loginUserOpts = {
+const loginUserOpts = (fastify: FastifyInstance) => ({
   schema: {
     body: {
       type: "object",
@@ -53,13 +56,16 @@ const loginUserOpts = {
       },
     },
   },
-  handler: loginUser,
-};
+  handler: (
+    req: FastifyRequest<{ Body: { email: string; password: string } }>,
+    reply: FastifyReply
+  ) => loginUser(req, reply, fastify),
+});
 
 export const usersRoutes = (fastify: FastifyInstance, options, done) => {
-  fastify.post("/users/register", createUserOpts);
+  fastify.post("/users/register", createUserOpts(fastify));
 
-  fastify.post("/users/login", loginUserOpts);
+  fastify.post("/users/login", loginUserOpts(fastify));
 
   done();
 };
