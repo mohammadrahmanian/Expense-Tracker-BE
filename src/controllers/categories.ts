@@ -10,7 +10,7 @@ export const getCategories = async (
   const userCategories = await server.prisma.category.findMany({
     where: { userId: user.id },
   });
-  reply.send(userCategories);
+  return reply.send(userCategories);
 };
 
 export const getCategoryById = async (
@@ -27,7 +27,7 @@ export const getCategoryById = async (
     return reply.status(404).send({ error: "Category not found" });
   }
 
-  reply.send(category);
+  return reply.send(category);
 };
 
 export const createCategory = async (
@@ -65,10 +65,10 @@ export const createCategory = async (
       return reply.status(400).send({ error: "Failed to create category" });
     }
 
-    reply.status(201).send(category);
+    return reply.status(201).send(category);
   } catch (error) {
     console.error("Error creating category:", error);
-    reply.status(500).send({ error: "Internal server error" });
+    return reply.status(500).send({ error: "Internal server error" });
   }
 };
 
@@ -107,7 +107,7 @@ export const editCategory = async (
     return reply.status(404).send({ error: "Category not found" });
   }
 
-  reply.code(204).send();
+  return reply.code(204).send();
 };
 
 export const deleteCategory = async (
@@ -125,9 +125,9 @@ export const deleteCategory = async (
       return reply.status(404).send({ error: "Category not found" });
     }
 
-    reply.code(204).send();
+    return reply.code(204).send();
   } catch (error) {
     console.error("Error deleting category:", error);
-    reply.status(500).send({ error: "Internal server error" });
+    return reply.status(500).send({ error: "Internal server error" });
   }
 };
