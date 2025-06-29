@@ -39,13 +39,13 @@ const createTransactionOpts = {
   schema: {
     body: {
       type: "object",
-      required: ["title", "amount", "date", "category", "type"],
+      required: ["title", "amount", "date", "categoryId", "type"],
       properties: {
         title: { $ref: "transactionSchema#/properties/title" },
         amount: { $ref: "transactionSchema#/properties/amount" },
         date: { $ref: "transactionSchema#/properties/date" },
         description: { $ref: "transactionSchema#/properties/description" },
-        category: { $ref: "transactionSchema#/properties/category" },
+        categoryId: { $ref: "transactionSchema#/properties/categoryId" },
         type: { $ref: "transactionSchema#/properties/type" },
       },
     },
@@ -84,7 +84,7 @@ const editTransactionOpts = {
         amount: { $ref: "transactionSchema#/properties/amount" },
         date: { $ref: "transactionSchema#/properties/date" },
         description: { $ref: "transactionSchema#/properties/description" },
-        category: { $ref: "transactionSchema#/properties/category" },
+        categoryId: { $ref: "transactionSchema#/properties/categoryId" },
         type: { $ref: "transactionSchema#/properties/type" },
       },
     },
