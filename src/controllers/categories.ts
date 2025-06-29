@@ -1,4 +1,4 @@
-import { FastifyReply, FastifyRequest } from "fastify";
+import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 import { Category } from "@prisma/client";
 
@@ -47,6 +47,18 @@ export const createCategory = async (
   } = req.body;
 
   try {
+    validateCategoryWithParent({
+      userId: user.id,
+      parentId,
+      categoryType: allowedFields.type,
+      server,
+    });
+  } catch (error) {
+    console.error("Error checking parent category:", error);
+    return reply.status(500).send({ error: "Internal server error" });
+  }
+
+  try {
     const category = await server.prisma.category.create({
       data: {
         ...allowedFields,
@@ -91,15 +103,25 @@ export const editCategory = async (
     ...allowedFields
   } = req.body;
 
+  if (allowedFields.type) {
+    try {
+      validateCategoryWithParent({
+        userId: user.id,
+        parentId,
+        categoryType: allowedFields.type,
+        server,
+      });
+    } catch (error) {
+      console.error("Error checking parent category:", error);
+      return reply.status(500).send({ error: "Internal server error" });
+    }
+  }
+
   const editedCategory = await server.prisma.category.update({
     where: { id: id, userId: user.id },
     data: {
       ...allowedFields,
-      parent: parentId
-        ? {
-            connect: { id: parentId },
-          }
-        : undefined,
+      ...(parentId ? { parent: { connect: { id: parentId } } } : {}),
     },
   });
 
@@ -129,5 +151,29 @@ export const deleteCategory = async (
   } catch (error) {
     console.error("Error deleting category:", error);
     return reply.status(500).send({ error: "Internal server error" });
+  }
+};
+
+const validateCategoryWithParent = async ({
+  userId,
+  parentId,
+  categoryType,
+  server,
+}: {
+  userId: string;
+  parentId: string;
+  categoryType: Category["type"];
+  server: FastifyInstance;
+}) => {
+  const parentCategory = await server.prisma.category.findUnique({
+    where: { id: parentId, userId: userId },
+  });
+
+  if (!parentCategory) {
+    throw new Error("Parent category not found");
+  }
+
+  if (categoryType !== parentCategory.type) {
+    throw new Error("Parent category type does not match");
   }
 };
