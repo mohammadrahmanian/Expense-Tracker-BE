@@ -1,7 +1,6 @@
 import fp from "fastify-plugin";
 import { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { jwtSecretKey } from "./jwtSecretKey";
 
 export interface JWTPayload extends JwtPayload {
   userId: string;
@@ -24,7 +23,7 @@ export const verifyTokenPlugin: FastifyPluginAsync = fp(async (fastify) => {
     }
 
     try {
-      const decoded = jwt.verify(token, jwtSecretKey) as JWTPayload;
+      const decoded = jwt.verify(token, process.env.JWT_SECRET) as JWTPayload;
       if (!decoded.userId) {
         return done(new Error("Invalid token structure"));
       }

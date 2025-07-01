@@ -1,8 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
-import { jwtSecretKey } from "../plugins/jwtSecretKey";
-import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { FastifyReply, FastifyRequest } from "fastify";
 
 const saltRounds = 10;
 
@@ -73,12 +72,11 @@ export const loginUser = async (
     });
   }
 
-  // TODO: Store token in the database
   const token = jwt.sign(
     {
       userId: user.id,
     },
-    jwtSecretKey,
+    process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
 

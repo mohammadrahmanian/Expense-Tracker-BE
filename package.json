@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "tsx app.ts",
-    "dev": "PORT=5003 HOST='0.0.0.0' tsx --watch app.ts"
+    "dev": "tsx --watch app.ts"
   },
   "type": "module",
   "keywords": [],
