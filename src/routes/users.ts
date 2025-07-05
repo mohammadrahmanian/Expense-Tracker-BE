@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { FastifyInstance } from "fastify";
 import { createUser, loginUser } from "../controllers/users";
 
 const createUserOpts = {
