@@ -1,10 +1,10 @@
+import { Transaction } from "@prisma/client";
 import {
   FastifyInstance,
   FastifyReply,
   FastifyRequest,
   RouteHandlerMethod,
 } from "fastify";
-import { Transaction } from "@prisma/client";
 
 type RequestParams = {
   id: string;
@@ -21,7 +21,7 @@ export const getTransactions: RouteHandlerMethod = async (
     });
     return reply.send(transactions);
   } catch (error) {
-    console.error("Error fetching transactions:", error);
+    server.log.error("Error fetching transactions:", error);
     return reply.code(500).send({
       error: "Internal Server Error",
     });
@@ -47,7 +47,7 @@ export const getTransaction: RouteHandlerMethod = async (
     }
     return reply.send(transaction);
   } catch (error) {
-    console.error("Error fetching transaction:", error);
+    server.log.error("Error fetching transaction:", error);
     return reply.code(500).send({
       error: "Internal Server Error",
     });
@@ -77,7 +77,7 @@ export const createTransaction = async (
       server,
     });
   } catch (error) {
-    console.error("Validation error:", error);
+    server.log.error("Validation error:", error);
     return reply.code(400).send({
       error: "Bad Request",
       message: error.message,
@@ -99,7 +99,8 @@ export const createTransaction = async (
 
     return reply.code(201).send(transaction);
   } catch (error) {
-    console.error("Error creating transaction:", error);
+    server.log.error("Error creating transaction:", error);
+
     return reply.code(500).send({
       error: "Internal Server Error",
     });
@@ -113,19 +114,13 @@ export const deleteTransaction = async (
   const { id } = req.params;
   const { user, server } = req;
   try {
-    const transaction = await server.prisma.transaction.delete({
+    await server.prisma.transaction.delete({
       where: { userId: user.id, id: id },
     });
-    if (!transaction) {
-      return reply.code(404).send({
-        error: "Not Found",
-        message: `Transaction with id ${id} not found`,
-        statusCode: 404,
-      });
-    }
+
     return reply.code(204).send();
   } catch (error) {
-    console.error("Error deleting transaction:", error);
+    server.log.error("Error detecting transaction:", error);
     return reply.code(500).send({
       error: "Internal Server Error",
     });
@@ -157,7 +152,7 @@ export const editTransaction = async (
         server,
       });
     } catch (error) {
-      console.error("Validation error:", error);
+      server.log.error("Validation error:", error);
       return reply.code(400).send({
         error: "Bad Request",
         message: error.message,
@@ -166,7 +161,7 @@ export const editTransaction = async (
   }
 
   try {
-    const transaction = await server.prisma.transaction.update({
+    await server.prisma.transaction.update({
       where: { userId: user.id, id: id },
       data: {
         ...(categoryId ? { category: { connect: { id: categoryId } } } : {}),
@@ -174,16 +169,9 @@ export const editTransaction = async (
       },
     });
 
-    if (!transaction) {
-      return reply.code(404).send({
-        error: "Not Found",
-        message: `Transaction with id ${id} not found`,
-        statusCode: 404,
-      });
-    }
     return reply.code(204).send();
   } catch (error) {
-    console.error("Error editing transaction:", error);
+    server.log.error("Error editing transaction:", error);
     return reply.code(500).send({
       error: "Internal Server Error",
     });
