@@ -122,6 +122,7 @@ export const createCategory = async (
       });
     }
 
+    // TODO: check category recursive relationship with parent, siblings, and siblings children
     const category = await server.prisma.category.create({
       data: {
         ...allowedFields,
@@ -186,6 +187,7 @@ export const editCategory = async (
       });
     }
 
+    // TODO: check category recursive relationship with parent, siblings, and siblings children
     const editedCategory = await server.prisma.category.update({
       where: { id: id, userId: user.id },
       data: {
