@@ -82,8 +82,12 @@ export const getCategoryById = async (
     const { id } = req.params;
     const { user, server } = req;
 
+    const depth = req.query.depth ? parseInt(req.query.depth, 10) : CATEGORY_CONFIG.MAX_QUERY_DEPTH;
+    const queryDepth = Math.min(depth, CATEGORY_CONFIG.MAX_QUERY_DEPTH);
     const category = await server.prisma.category.findUnique({
       where: { userId: user.id, id: id },
+      include: getCategoryInclude(queryDepth),
+    });
     });
 
     if (!category) {
