@@ -49,7 +49,6 @@ const validateCategoryWithParent = async ({
 export const getCategories = async (
   req: FastifyRequest<{
     Querystring: {
-      flat?: "true" | "false";
       depth?: string;
     };
   }>,
@@ -58,10 +57,16 @@ export const getCategories = async (
   try {
     const { user, server } = req;
 
+    const depth = req.query.depth
+      ? parseInt(req.query.depth, 10)
+      : CATEGORY_CONFIG.MAX_QUERY_DEPTH;
+    const queryDepth = Math.min(depth, CATEGORY_CONFIG.MAX_QUERY_DEPTH);
+    const userCategories = await server.prisma.category.findMany({
     const userCategories = await server.prisma.category.findMany({
       where: { userId: user.id },
+      include: getCategoryInclude(queryDepth),
+      orderBy: { createdAt: 'desc' }
     });
-
     return reply.send(userCategories);
   } catch (error) {
     req.log.error(error);
