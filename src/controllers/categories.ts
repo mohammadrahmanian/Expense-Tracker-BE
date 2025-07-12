@@ -62,7 +62,6 @@ export const getCategories = async (
       : CATEGORY_CONFIG.MAX_QUERY_DEPTH;
     const queryDepth = Math.min(depth, CATEGORY_CONFIG.MAX_QUERY_DEPTH);
     const userCategories = await server.prisma.category.findMany({
-    const userCategories = await server.prisma.category.findMany({
       where: { userId: user.id },
       include: getCategoryInclude(queryDepth),
       orderBy: { createdAt: 'desc' }
