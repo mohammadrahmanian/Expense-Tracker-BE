@@ -64,7 +64,7 @@ export const getCategories = async (
     const userCategories = await server.prisma.category.findMany({
       where: { userId: user.id },
       include: getCategoryInclude(queryDepth),
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
     return reply.send(userCategories);
   } catch (error) {
@@ -80,18 +80,20 @@ export const getCategoryById = async (
       depth?: string;
     };
   }>,
+  reply: FastifyReply
+) => {
+  try {
+    const { id } = req.params;
+    const { user, server } = req;
 
-    const depth = req.query.depth ? parseInt(req.query.depth, 10) : CATEGORY_CONFIG.MAX_QUERY_DEPTH;
+    const depth = req.query.depth
+      ? parseInt(req.query.depth, 10)
+      : CATEGORY_CONFIG.MAX_QUERY_DEPTH;
+
     const queryDepth = Math.min(depth, CATEGORY_CONFIG.MAX_QUERY_DEPTH);
     const category = await server.prisma.category.findUnique({
       where: { userId: user.id, id: id },
       include: getCategoryInclude(queryDepth),
-    });
-    const { id } = req.params;
-    const { user, server } = req;
-
-    const category = await server.prisma.category.findUnique({
-      where: { userId: user.id, id: id },
     });
 
     if (!category) {
