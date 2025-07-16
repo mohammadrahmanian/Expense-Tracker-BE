@@ -1,6 +1,7 @@
 import { Category } from "@prisma/client";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { CATEGORY_CONFIG } from "../config/constants.js";
+import { CategoryWithChildren } from "../types/category.js";
 
 const getCategoryInclude = (
   depth: number = CATEGORY_CONFIG.MAX_QUERY_DEPTH
@@ -13,6 +14,13 @@ const getCategoryInclude = (
       include: depth > 1 ? getCategoryInclude(depth - 1) : {},
     },
   };
+};
+
+const getFlattenedCategories = (
+  category: CategoryWithChildren
+): CategoryWithChildren[] => {
+  if (!category.children) return [category];
+  return [category, ...category.children.flatMap(getFlattenedCategories)];
 };
 
 const validateCategoryWithParent = async ({
@@ -41,9 +49,20 @@ const validateCategoryWithParent = async ({
   }
 
   // Prevent circular references
-  if (categoryId && parentId === categoryId) {
-    throw new Error("Category cannot be its own parent");
+  if (categoryId) {
+    if (parentId === categoryId)
+      throw new Error("Category cannot be its own parent");
+    const category = await server.prisma.category.findUnique({
+      where: { userId: userId, id: categoryId },
+      include: getCategoryInclude(10),
+    });
+
+    const flattenedCategories = getFlattenedCategories(category);
+    if (flattenedCategories.some((cat) => cat.id === parentId)) {
+      throw new Error("Child category cannot be a parent");
+    }
   }
+  return true;
 };
 
 export const getCategories = async (
