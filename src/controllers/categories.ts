@@ -16,6 +16,22 @@ const getCategoryInclude = (
   };
 };
 
+const getParentDepth = async (
+  categoryId: string,
+  server: FastifyInstance,
+  userId: string
+) => {
+  const category = await server.prisma.category.findUnique({
+    where: { id: categoryId, userId },
+    include: {
+      parent: true,
+    },
+  });
+  if (!category.parent) return 0;
+
+  return 1 + (await getParentDepth(category.parent.id, server, userId));
+};
+
 const getFlattenedCategories = (
   category: CategoryWithChildren
 ): CategoryWithChildren[] => {
@@ -149,9 +165,14 @@ export const createCategory = async (
         categoryType: allowedFields.type,
         server,
       });
+      const parentDepth = await getParentDepth(parentId, server, user.id);
+      if (parentDepth > CATEGORY_CONFIG.MAX_NESTING_DEPTH) {
+        return reply
+          .status(400)
+          .send({ error: "Parent category depth exceeds maximum allowed" });
+      }
     }
 
-    // TODO: check category recursive relationship with parent, siblings, and siblings children
     const category = await server.prisma.category.create({
       data: {
         ...allowedFields,
@@ -216,7 +237,17 @@ export const editCategory = async (
       });
     }
 
-    // TODO: check category recursive relationship with parent, siblings, and siblings children
+    // TODO: Check if edit is not making nesting depth exceed limit
+    if (parentId) {
+      // TODO: Check if the category and its children do not exceed max nesting depth
+      const parentDepth = await getParentDepth(parentId, server, user.id);
+      if (parentDepth > CATEGORY_CONFIG.MAX_NESTING_DEPTH) {
+        return reply
+          .status(400)
+          .send({ error: "Parent category depth exceeds maximum allowed" });
+      }
+    }
+
     const editedCategory = await server.prisma.category.update({
       where: { id: id, userId: user.id },
       data: {
