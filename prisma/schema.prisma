@@ -1,10 +1,10 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-}
-
-generator client {
-  provider = "prisma-client-js"
 }
 
 model User {
@@ -13,17 +13,12 @@ model User {
   password     String
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-  categories   Category[]
-  transactions Transaction[]
   isDeleted    Boolean       @default(false)
   deletedAt    DateTime?
+  categories   Category[]
+  transactions Transaction[]
 
   @@index([email])
-}
-
-enum Type {
-  INCOME
-  EXPENSE
 }
 
 model Category {
@@ -66,4 +61,9 @@ model Transaction {
   @@index([categoryId])
   @@index([date])
   @@index([type])
+}
+
+enum Type {
+  INCOME
+  EXPENSE
 }

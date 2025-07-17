@@ -1,5 +1,5 @@
-import fp from "fastify-plugin";
 import { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
+import fp from "fastify-plugin";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
 export interface JWTPayload extends JwtPayload {
@@ -7,11 +7,7 @@ export interface JWTPayload extends JwtPayload {
 }
 
 export const verifyTokenPlugin: FastifyPluginAsync = fp(async (fastify) => {
-  const verifyToken = async (
-    req: FastifyRequest,
-    reply: FastifyReply,
-    done: (err?: Error) => void
-  ) => {
+  const verifyToken = async (req: FastifyRequest, _: FastifyReply) => {
     const authHeader = req.headers.authorization;
 
     const token =
@@ -19,31 +15,23 @@ export const verifyTokenPlugin: FastifyPluginAsync = fp(async (fastify) => {
         ? authHeader.slice(7)
         : authHeader;
     if (!token) {
-      return done(new Error("No token provided"));
+      throw new Error("No token provided");
     }
 
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET) as JWTPayload;
-      if (!decoded.userId) {
-        return done(new Error("Invalid token structure"));
-      }
-
-      const user = await fastify.prisma.user.findUnique({
-        where: { id: decoded.userId },
-      });
-
-      if (!user) return done(new Error("User not found"));
-
-      req.user = {
-        id: user.id,
-      };
-
-      done();
-    } catch (error) {
-      return done(
-        error instanceof Error ? error : new Error("Invalid token structure")
-      );
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as JWTPayload;
+    if (!decoded.userId) {
+      throw new Error("Invalid token structure");
     }
+
+    const user = await fastify.prisma.user.findUnique({
+      where: { id: decoded.userId },
+    });
+
+    if (!user) throw new Error("User not found");
+
+    req.user = {
+      id: user.id,
+    };
   };
 
   fastify.decorate("verifyToken", verifyToken);

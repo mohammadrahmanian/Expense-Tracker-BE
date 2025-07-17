@@ -1,5 +1,5 @@
-import { FastifyRequest, FastifyReply } from "fastify";
 import { PrismaClient } from "@prisma/client";
+import { FastifyReply } from "fastify";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -8,7 +8,7 @@ declare module "fastify" {
       request: FastifyRequest,
       reply: FastifyReply,
       done: (err?: Error) => void
-    ) => void;
+    ) => Promise<void>;
   }
   interface FastifyRequest {
     user?: {
