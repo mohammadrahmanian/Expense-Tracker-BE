@@ -30,7 +30,24 @@ export const createUser = async (
       data: { email, password: hashedPassword },
     });
 
-    return reply.status(201).send(user);
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error("JWT secret environment variable is not set");
+    }
+
+    const token = jwt.sign(
+      {
+        userId: user.id,
+      },
+      jwtSecret,
+      { expiresIn: "7d" }
+    );
+
+    return reply.status(201).send({
+      id: user.id,
+      email: user.email,
+      token,
+    });
   } catch (error) {
     return reply.status(500).send({
       error: "Internal Server Error",
@@ -72,11 +89,16 @@ export const loginUser = async (
     });
   }
 
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error("JWT secret environment variable is not set");
+  }
+
   const token = jwt.sign(
     {
       userId: user.id,
     },
-    process.env.JWT_SECRET,
+    jwtSecret,
     { expiresIn: "7d" }
   );
 
