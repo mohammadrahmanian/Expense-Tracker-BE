@@ -10,10 +10,9 @@ export const verifyTokenPlugin: FastifyPluginAsync = fp(async (fastify) => {
   const verifyToken = async (req: FastifyRequest) => {
     const authHeader = req.headers.authorization;
 
-    const token =
-      authHeader && authHeader.startsWith("Bearer ")
-        ? authHeader.slice(7)
-        : authHeader;
+    const token = authHeader?.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : authHeader;
     if (!token) {
       throw new Error("No token provided");
     }
@@ -21,7 +20,7 @@ export const verifyTokenPlugin: FastifyPluginAsync = fp(async (fastify) => {
     if (!jwtSecret) {
       throw new Error("JWT secret environment variable is not set");
     }
-    const decoded = jwt.verify(token, process.env.JWT_SECRET) as JWTPayload;
+    const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
     if (!decoded.userId) {
       throw new Error("Invalid token structure");
     }
