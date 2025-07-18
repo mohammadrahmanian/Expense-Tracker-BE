@@ -30,7 +30,19 @@ export const createUser = async (
       data: { email, password: hashedPassword },
     });
 
-    return reply.status(201).send(user);
+    const token = jwt.sign(
+      {
+        userId: user.id,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return reply.status(201).send({
+      id: user.id,
+      email: user.email,
+      token,
+    });
   } catch (error) {
     return reply.status(500).send({
       error: "Internal Server Error",
