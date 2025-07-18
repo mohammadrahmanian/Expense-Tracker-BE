@@ -17,7 +17,10 @@ export const verifyTokenPlugin: FastifyPluginAsync = fp(async (fastify) => {
     if (!token) {
       throw new Error("No token provided");
     }
-
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error("JWT secret environment variable is not set");
+    }
     const decoded = jwt.verify(token, process.env.JWT_SECRET) as JWTPayload;
     if (!decoded.userId) {
       throw new Error("Invalid token structure");
