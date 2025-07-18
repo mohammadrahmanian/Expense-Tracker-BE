@@ -30,11 +30,16 @@ export const createUser = async (
       data: { email, password: hashedPassword },
     });
 
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error("JWT secret environment variable is not set");
+    }
+
     const token = jwt.sign(
       {
         userId: user.id,
       },
-      process.env.JWT_SECRET,
+      jwtSecret,
       { expiresIn: "7d" }
     );
 
@@ -84,11 +89,16 @@ export const loginUser = async (
     });
   }
 
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error("JWT secret environment variable is not set");
+  }
+
   const token = jwt.sign(
     {
       userId: user.id,
     },
-    process.env.JWT_SECRET,
+    jwtSecret,
     { expiresIn: "7d" }
   );
 
