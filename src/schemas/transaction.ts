@@ -7,7 +7,7 @@ export const transactionSchema = {
     amount: { type: "number" },
     date: { type: "string" },
     description: { type: "string" },
-    category: { type: "string" },
-    type: { type: "string", enum: ["income", "expense"] },
+    categoryId: { type: "string" },
+    type: { type: "string", enum: ["INCOME", "EXPENSE"] },
   },
 };

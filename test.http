@@ -1,4 +1,4 @@
-@PORT=5003
+@PORT=4000
 ### GET all transactions
 
 GET http://localhost:{{PORT}}/transactions HTTP/1.1
@@ -7,7 +7,7 @@ Authorization: Bearer <jwt token>
 
 ### GET a transaction by id
 
-GET http://localhost:{{PORT}}/transactions/97f77f85-c7b2-4164-807c-5951941de011 HTTP/1.1
+GET http://localhost:{{PORT}}/transactions/cmci58g620000eu9scuxkcfy3 HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer <jwt token>
 
@@ -18,20 +18,20 @@ Content-Type: application/json
 Authorization: Bearer <jwt token>
 
 {
-  "title": "New Transaction 2",
+  "title": "New Transaction",
   "description": "This is a new new new transaction",
   "amount": 300.00,
   "date": "2023-10-01T12:00:00Z",
-  "category": "Food",
-  "type": "expense"
+  "categoryId": "cmcg4ym370000q2b3zjht3ttb",
+  "type": "EXPENSE"
 }
 
 ### Delete a transaction by id
-DELETE http://localhost:{{PORT}}/transactions/2 HTTP/1.1
+DELETE http://localhost:{{PORT}}/transactions/cmci58g620000eu9scuxkcfy3 HTTP/1.1
 Authorization: Bearer <jwt token>
 
 ### Update a transaction by id
-PUT http://localhost:{{PORT}}/transactions/97f77f85-c7b2-4164-807c-5951941de011 HTTP/1.1
+PUT http://localhost:{{PORT}}/transactions/cmci58g7t0001eu9s7dv7w3kc HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer <jwt token>
 
@@ -45,7 +45,7 @@ Content-Type: application/json
 Authorization: Bearer <jwt token>
 
 ### GET a category by id
-GET http://localhost:{{PORT}}/categories/1 HTTP/1.1
+GET http://localhost:{{PORT}}/categories/cmcg4ym370000q2b3zjht3ttb HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer <jwt token>
 
@@ -55,20 +55,20 @@ Content-Type: application/json
 Authorization: Bearer <jwt token>
 
 {
-  "name": "New Category",
-  "type": "expense"
+  "name": "New Category 3",
+  "type": "INCOME"
 }
 ### Update a category by id
-PUT http://localhost:{{PORT}}/categories/4eb2d160-61d8-4798-81ff-f0ed0c62a9c0 HTTP/1.1
+PUT http://localhost:{{PORT}}/categories/cmcgp9i260001euq764gwt8ri HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer <jwt token>
 
 {
   "name": "Updated Category",
-  "type": "income"
+  "type": "EXPENSE"
 }
 ### Delete a category by id
-DELETE http://localhost:{{PORT}}/categories/1 HTTP/1.1
+DELETE http://localhost:{{PORT}}/categories/cmcgpt7nl0000eu7fqbzczb74 HTTP/1.1
 Authorization: Bearer <jwt token>
 
 ### Create a new user
@@ -76,7 +76,6 @@ POST http://localhost:{{PORT}}/users/register HTTP/1.1
 Content-Type: application/json
 
 {
-  "username": "newuser",
   "email": "newuser@example.com",
   "password": "securepassword"
 }

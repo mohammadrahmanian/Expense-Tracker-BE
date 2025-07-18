@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  password     String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  isDeleted    Boolean       @default(false)
+  deletedAt    DateTime?
+  categories   Category[]
+  transactions Transaction[]
+
+  @@index([email])
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  name         String
+  type         Type
+  description  String?
+  color        String?
+  icon         String?
+  parentId     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  parent       Category?     @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children     Category[]    @relation("CategoryHierarchy")
+  transactions Transaction[]
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([name, userId])
+  @@index([userId])
+  @@index([type])
+  @@index([parentId])
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  amount      Decimal  @db.Decimal(10, 2)
+  title       String
+  type        Type
+  description String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([date])
+  @@index([type])
+}
+
+enum Type {
+  INCOME
+  EXPENSE
+}

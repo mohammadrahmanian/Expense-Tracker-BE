@@ -1,12 +1,10 @@
-import { FastifyRequest, FastifyReply } from "fastify";
+import { PrismaClient } from "@prisma/client";
+import "fastify";
 
 declare module "fastify" {
   interface FastifyInstance {
-    verifyToken: (
-      request: FastifyRequest,
-      reply: FastifyReply,
-      done: (err?: Error) => void
-    ) => void;
+    prisma: PrismaClient;
+    verifyToken: (request: FastifyRequest) => Promise<void>;
   }
   interface FastifyRequest {
     user?: {

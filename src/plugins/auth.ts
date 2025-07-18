@@ -1,43 +1,40 @@
-import { FastifyReply, FastifyRequest } from "fastify";
+import { FastifyPluginAsync, FastifyRequest } from "fastify";
+import fp from "fastify-plugin";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { jwtSecretKey } from "./jwtSecretKey";
-import { users } from "../mocked/users";
 
 export interface JWTPayload extends JwtPayload {
   userId: string;
 }
 
-export const verifyToken = (
-  req: FastifyRequest,
-  reply: FastifyReply,
-  done: (err?: Error) => void
-) => {
-  const authHeader = req.headers.authorization;
+export const verifyTokenPlugin: FastifyPluginAsync = fp(async (fastify) => {
+  const verifyToken = async (req: FastifyRequest) => {
+    const authHeader = req.headers.authorization;
 
-  const token =
-    authHeader && authHeader.startsWith("Bearer ")
+    const token = authHeader?.startsWith("Bearer ")
       ? authHeader.slice(7)
       : authHeader;
-
-  jwt.verify(token, jwtSecretKey, (error, decoded: JWTPayload) => {
-    if (error) done(new Error("Invalid token structure"));
-    if (decoded.userId) {
-      const user = users.find((user) => user.id === decoded.userId);
-      if (!user) {
-        return reply.status(401).send({
-          error: "Unauthorized",
-          message: "User not found",
-          statusCode: 401,
-        });
-      }
-
-      req.user = {
-        id: user.id,
-      };
-
-      done();
-    } else {
-      done(new Error("Invalid token structure"));
+    if (!token) {
+      throw new Error("No token provided");
     }
-  });
-};
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error("JWT secret environment variable is not set");
+    }
+    const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
+    if (!decoded.userId) {
+      throw new Error("Invalid token structure");
+    }
+
+    const user = await fastify.prisma.user.findUnique({
+      where: { id: decoded.userId },
+    });
+
+    if (!user) throw new Error("User not found");
+
+    req.user = {
+      id: user.id,
+    };
+  };
+
+  fastify.decorate("verifyToken", verifyToken);
+});

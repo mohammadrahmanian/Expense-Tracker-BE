@@ -1,10 +1,5 @@
-export type Category = {
-  id: string;
-  userId: string;
-  name: string;
-  type: "income" | "expense";
-  description?: string;
-  parentId?: string;
-  createdAt: Date;
-  updatedAt: Date;
+import { Category } from "@prisma/client";
+
+export type CategoryWithChildren = Category & {
+  children?: CategoryWithChildren[];
 };

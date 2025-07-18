@@ -3,14 +3,17 @@ import FastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
 import FastifyAuth from "@fastify/auth";
 
-import { transactionsRoutes } from "./src/routes/transactions";
+import { verifyTokenPlugin } from "./src/plugins/auth";
+import { prismaPlugin } from "./src/plugins/prisma";
+
 import { transactionSchema } from "./src/schemas/transaction";
 import { userSchema } from "./src/schemas/user";
-import { verifyToken } from "./src/plugins/auth";
-import { usersRoutes } from "./src/routes/users";
 import { categorySchema } from "./src/schemas/category";
-import { categoriesRoutes } from "./src/routes/categories";
 import { errorSchema } from "./src/schemas/error";
+
+import { usersRoutes } from "./src/routes/users";
+import { categoriesRoutes } from "./src/routes/categories";
+import { transactionsRoutes } from "./src/routes/transactions";
 
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || "0.0.0.0";
@@ -29,11 +32,13 @@ fastify.register(FastifySwagger, {
   },
 });
 
+fastify.register(prismaPlugin);
+fastify.register(verifyTokenPlugin);
+fastify.register(FastifyAuth);
+
 fastify.register(fastifySwaggerUi, {
   routePrefix: "/docs",
 });
-
-fastify.decorate("verifyToken", verifyToken).register(FastifyAuth);
 
 fastify.register(transactionsRoutes);
 fastify.register(categoriesRoutes);

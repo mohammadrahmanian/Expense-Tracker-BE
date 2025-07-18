@@ -1,103 +1,294 @@
-import { FastifyReply, FastifyRequest } from "fastify";
-import { v4 as uuidv4 } from "uuid";
+import { Category } from "@prisma/client";
+import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { CATEGORY_CONFIG } from "../config/constants.js";
+import { CategoryWithChildren } from "../types/category.js";
 
-import { categories } from "../mocked/categories";
-import { Category } from "../types/category";
+const getCategoryInclude = (
+  depth: number = CATEGORY_CONFIG.MAX_QUERY_DEPTH
+) => {
+  if (depth <= 0) return {};
 
-export const getCategories = (req: FastifyRequest, reply: FastifyReply) => {
-  const { user } = req;
-  const userCategories = categories.filter((cat) => cat.userId === user.id);
-  reply.send(userCategories);
+  return {
+    children: {
+      take: 20, // Limit number of children per level
+      include: depth > 1 ? getCategoryInclude(depth - 1) : {},
+    },
+  };
 };
 
-export const getCategoryById = (
-  req: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply
+const getParentDepth = async (
+  categoryId: string,
+  server: FastifyInstance,
+  userId: string
 ) => {
-  const { id } = req.params;
-  const { user } = req;
-  const category = categories.find(
-    (cat) => cat.id === id && cat.userId === user.id
-  );
-
+  const category = await server.prisma.category.findUnique({
+    where: { id: categoryId, userId },
+    include: {
+      parent: true,
+    },
+  });
   if (!category) {
-    return reply.status(404).send({ error: "Category not found" });
+    throw new Error("Category not found");
   }
 
-  reply.send(category);
+  if (!category.parent) return 0;
+
+  return 1 + (await getParentDepth(category.parent.id, server, userId));
 };
 
-type CreateCategoryBody = Omit<
-  Category,
-  "id" | "userId" | "createdAt" | "updatedAt"
->;
+const getChildrenDepth = (category: CategoryWithChildren) => {
+  if (!category.children) return 0;
+  if (category.children.length === 0) return 0;
+  return 1 + Math.max(...category.children.map(getChildrenDepth));
+};
 
-export const createCategory = (
-  req: FastifyRequest<{ Body: CreateCategoryBody }>,
+const getFlattenedCategories = (
+  category: CategoryWithChildren
+): CategoryWithChildren[] => {
+  if (!category.children) return [category];
+  return [category, ...category.children.flatMap(getFlattenedCategories)];
+};
+
+const validateCategoryWithParent = async ({
+  userId,
+  parentId,
+  categoryType,
+  server,
+  categoryId,
+}: {
+  userId: string;
+  parentId: string;
+  categoryType: Category["type"];
+  server: FastifyInstance;
+  categoryId?: string;
+}) => {
+  const parentCategory = await server.prisma.category.findUnique({
+    where: { id: parentId, userId: userId },
+  });
+
+  if (!parentCategory) {
+    throw new Error("Parent category not found or does not belong to user");
+  }
+
+  if (categoryType !== parentCategory.type) {
+    throw new Error("Category type must match parent category type");
+  }
+
+  // Prevent circular references
+  if (categoryId) {
+    if (parentId === categoryId)
+      throw new Error("Category cannot be its own parent");
+    const category = await server.prisma.category.findUnique({
+      where: { userId: userId, id: categoryId },
+      include: getCategoryInclude(10),
+    });
+
+    const flattenedCategories = getFlattenedCategories(category);
+    if (flattenedCategories.some((cat) => cat.id === parentId)) {
+      throw new Error("Child category cannot be a parent");
+    }
+  }
+  return true;
+};
+
+export const getCategories = async (
+  req: FastifyRequest<{
+    Querystring: {
+      depth?: string;
+    };
+  }>,
   reply: FastifyReply
 ) => {
-  const { user } = req;
+  try {
+    const { user, server } = req;
 
-  // TODO: Validate and sanitize the request body
-  const newCategory: Category = {
-    ...req.body,
-    id: uuidv4(),
-    userId: user.id,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+    const depth = req.query.depth
+      ? parseInt(req.query.depth, 10)
+      : CATEGORY_CONFIG.MAX_QUERY_DEPTH;
+    const queryDepth = Math.min(depth, CATEGORY_CONFIG.MAX_QUERY_DEPTH);
+    const userCategories = await server.prisma.category.findMany({
+      where: { userId: user.id },
+      include: getCategoryInclude(queryDepth),
+      orderBy: { createdAt: "desc" },
+    });
+    return reply.send(userCategories);
+  } catch (error) {
+    req.log.error(error);
+    return reply.status(500).send({ error: "Internal Server Error" });
+  }
+};
 
-  categories.push(newCategory);
-  reply.status(201).send(newCategory);
+export const getCategoryById = async (
+  req: FastifyRequest<{
+    Params: { id: string };
+    Querystring: {
+      depth?: string;
+    };
+  }>,
+  reply: FastifyReply
+) => {
+  try {
+    const { id } = req.params;
+    const { user, server } = req;
+
+    const depth = req.query.depth
+      ? parseInt(req.query.depth, 10)
+      : CATEGORY_CONFIG.MAX_QUERY_DEPTH;
+
+    const queryDepth = Math.min(depth, CATEGORY_CONFIG.MAX_QUERY_DEPTH);
+    const category = await server.prisma.category.findUnique({
+      where: { userId: user.id, id: id },
+      include: getCategoryInclude(queryDepth),
+    });
+
+    if (!category) {
+      return reply.status(404).send({ error: "Category not found" });
+    }
+
+    return reply.send(category);
+  } catch (error) {
+    req.log.error(error);
+    return reply.status(500).send({ error: "Internal Server Error" });
+  }
+};
+
+export const createCategory = async (
+  req: FastifyRequest<{ Body: Category }>,
+  reply: FastifyReply
+) => {
+  try {
+    const { user, server } = req;
+
+    const {
+      id: _,
+      userId: __,
+      createdAt: ___,
+      updatedAt: ____,
+      parentId,
+      ...allowedFields
+    } = req.body;
+
+    if (parentId) {
+      await validateCategoryWithParent({
+        userId: user.id,
+        parentId,
+        categoryType: allowedFields.type,
+        server,
+      });
+      const parentDepth = await getParentDepth(parentId, server, user.id);
+      if (parentDepth > CATEGORY_CONFIG.MAX_NESTING_DEPTH) {
+        return reply
+          .status(400)
+          .send({ error: "Parent category depth exceeds maximum allowed" });
+      }
+    }
+
+    const category = await server.prisma.category.create({
+      data: {
+        ...allowedFields,
+        user: {
+          connect: { id: user.id },
+        },
+        parent: parentId
+          ? {
+              connect: { id: parentId },
+            }
+          : undefined,
+      },
+    });
+
+    return reply.status(201).send(category);
+  } catch (error) {
+    req.log.error(error);
+    if (error instanceof Error) {
+      return reply.status(400).send({ error: error.message });
+    } else {
+      return reply.status(500).send({ error: "Internal server error" });
+    }
+  }
 };
 
 type EditCategoryBody = Partial<Category>;
 
-export const editCategory = (
+export const editCategory = async (
   req: FastifyRequest<{ Body: EditCategoryBody; Params: { id: string } }>,
   reply: FastifyReply
 ) => {
-  const { user } = req;
-  const { id } = req.params;
+  try {
+    const { user, server } = req;
+    const { id } = req.params;
 
-  const index = categories.findIndex(
-    (cat) => cat.id === id && cat.userId === user.id
-  );
-  if (index === -1) {
-    return reply.status(404).send({ error: "Category not found" });
+    const {
+      id: _,
+      userId: __,
+      createdAt: ___,
+      updatedAt: ____,
+      parentId,
+      ...allowedFields
+    } = req.body;
+
+    if (parentId) {
+      // Get current category to determine type if not provided in update
+      const currentCategory = await server.prisma.category.findUnique({
+        where: { id: id, userId: user.id },
+        include: getCategoryInclude(10),
+      });
+
+      if (!currentCategory) {
+        return reply.status(404).send({ error: "Category not found" });
+      }
+
+      await validateCategoryWithParent({
+        userId: user.id,
+        parentId,
+        categoryType: allowedFields.type || currentCategory.type,
+        server,
+        categoryId: id,
+      });
+
+      const parentDepth = await getParentDepth(parentId, server, user.id);
+      const childrenDepth = getChildrenDepth(currentCategory);
+
+      if (childrenDepth + parentDepth > CATEGORY_CONFIG.MAX_NESTING_DEPTH) {
+        return reply
+          .status(400)
+          .send({ error: "Category depth exceeds maximum allowed" });
+      }
+    }
+
+    const editedCategory = await server.prisma.category.update({
+      where: { id: id, userId: user.id },
+      data: {
+        ...allowedFields,
+        ...(parentId ? { parent: { connect: { id: parentId } } } : {}),
+      },
+    });
+
+    return reply.send(editedCategory);
+  } catch (error) {
+    req.log.error(error);
+    if (error instanceof Error) {
+      return reply.status(400).send({ error: error.message });
+    } else {
+      return reply.status(500).send({ error: "Internal server error" });
+    }
   }
-
-  // TODO: Validate and sanitize the request body
-  const {
-    id: _,
-    userId: __,
-    createdAt: ___,
-    updatedAt: ____,
-    ...allowedFields
-  } = req.body;
-
-  const updatedCategory: Category = {
-    ...categories[index],
-    ...allowedFields,
-    updatedAt: new Date(),
-  };
-
-  categories[index] = updatedCategory;
-  reply.code(204).send();
 };
 
-export const deleteCategory = (
+export const deleteCategory = async (
   req: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply
 ) => {
   const { id } = req.params;
-  const { user } = req;
-  const index = categories.findIndex(
-    (cat) => cat.id === id && cat.userId === user.id
-  );
-  if (index === -1) {
-    return reply.status(404).send({ error: "Category not found" });
+  const { user, server } = req;
+  try {
+    const category = await server.prisma.category.delete({
+      where: { id: id, userId: user.id },
+    });
+
+    return reply.code(204).send();
+  } catch (error) {
+    req.log.error(error);
+    return reply.status(500).send({ error: "Internal server error" });
   }
-  categories.splice(index, 1);
-  reply.code(204).send();
 };

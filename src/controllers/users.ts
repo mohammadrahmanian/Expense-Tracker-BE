@@ -1,18 +1,22 @@
-import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
-import { users } from "../mocked/users";
-import { jwtSecretKey } from "../plugins/jwtSecretKey";
+import { FastifyReply, FastifyRequest } from "fastify";
 
 const saltRounds = 10;
 
-export const createUser = async (req, reply) => {
+export const createUser = async (
+  req: FastifyRequest<{ Body: { email: string; password: string } }>,
+  reply: FastifyReply
+) => {
+  const { server } = req;
   const { email, password } = req.body;
-  const isUserAlreadyExists =
-    users.findIndex((user) => user.email === email) !== -1;
+  // TODO: Validate and sanitize input
+  const user = await server.prisma.user.findUnique({
+    where: { email },
+  });
 
-  if (isUserAlreadyExists) {
+  if (user) {
     return reply.status(400).send({
       error: "User already exists",
       message: "A user with this email already exists.",
@@ -22,16 +26,11 @@ export const createUser = async (req, reply) => {
   try {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    const newUser = {
-      id: uuidv4(),
-      email,
-      password: hashedPassword,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    const user = await server.prisma.user.create({
+      data: { email, password: hashedPassword },
+    });
 
-    users.push(newUser);
-    return reply.status(201).send(newUser);
+    return reply.status(201).send(user);
   } catch (error) {
     return reply.status(500).send({
       error: "Internal Server Error",
@@ -41,10 +40,14 @@ export const createUser = async (req, reply) => {
   }
 };
 
-export const loginUser = async (req, reply) => {
+export const loginUser = async (
+  req: FastifyRequest<{ Body: { email: string; password: string } }>,
+  reply: FastifyReply
+) => {
+  const { server } = req;
   const { email, password } = req.body;
-  // TODO: Read users from the database instead of mocked data
-  const user = users.find((user) => user.email === email);
+  // TODO: Validate and sanitize input
+  const user = await server.prisma.user.findUnique({ where: { email } });
   if (!user) {
     return reply.code(401).send({
       error: "Unauthorized",
@@ -73,7 +76,7 @@ export const loginUser = async (req, reply) => {
     {
       userId: user.id,
     },
-    jwtSecretKey,
+    process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
 
