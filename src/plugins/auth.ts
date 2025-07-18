@@ -1,4 +1,4 @@
-import { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
+import { FastifyPluginAsync, FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
@@ -7,7 +7,7 @@ export interface JWTPayload extends JwtPayload {
 }
 
 export const verifyTokenPlugin: FastifyPluginAsync = fp(async (fastify) => {
-  const verifyToken = async (req: FastifyRequest, _: FastifyReply) => {
+  const verifyToken = async (req: FastifyRequest) => {
     const authHeader = req.headers.authorization;
 
     const token =

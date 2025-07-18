@@ -27,6 +27,10 @@ const getParentDepth = async (
       parent: true,
     },
   });
+  if (!category) {
+    throw new Error("Category not found");
+  }
+
   if (!category.parent) return 0;
 
   return 1 + (await getParentDepth(category.parent.id, server, userId));
@@ -277,10 +281,6 @@ export const deleteCategory = async (
     const category = await server.prisma.category.delete({
       where: { id: id, userId: user.id },
     });
-
-    if (!category) {
-      return reply.status(404).send({ error: "Category not found" });
-    }
 
     return reply.code(204).send();
   } catch (error) {
