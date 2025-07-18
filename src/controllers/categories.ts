@@ -36,6 +36,12 @@ const getParentDepth = async (
   return 1 + (await getParentDepth(category.parent.id, server, userId));
 };
 
+const getChildrenDepth = (category: CategoryWithChildren) => {
+  if (!category.children) return 0;
+  if (category.children.length === 0) return 0;
+  return 1 + Math.max(...category.children.map(getChildrenDepth));
+};
+
 const getFlattenedCategories = (
   category: CategoryWithChildren
 ): CategoryWithChildren[] => {
@@ -225,7 +231,7 @@ export const editCategory = async (
       // Get current category to determine type if not provided in update
       const currentCategory = await server.prisma.category.findUnique({
         where: { id: id, userId: user.id },
-        select: { type: true },
+        include: getCategoryInclude(10),
       });
 
       if (!currentCategory) {
@@ -239,16 +245,14 @@ export const editCategory = async (
         server,
         categoryId: id,
       });
-    }
 
-    // TODO: Check if edit is not making nesting depth exceed limit
-    if (parentId) {
-      // TODO: Check if the category and its children do not exceed max nesting depth
       const parentDepth = await getParentDepth(parentId, server, user.id);
-      if (parentDepth > CATEGORY_CONFIG.MAX_NESTING_DEPTH) {
+      const childrenDepth = getChildrenDepth(currentCategory);
+
+      if (childrenDepth + parentDepth > CATEGORY_CONFIG.MAX_NESTING_DEPTH) {
         return reply
           .status(400)
-          .send({ error: "Parent category depth exceeds maximum allowed" });
+          .send({ error: "Category depth exceeds maximum allowed" });
       }
     }
 
