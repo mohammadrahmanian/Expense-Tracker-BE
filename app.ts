@@ -1,19 +1,20 @@
-import Fastify from "fastify";
+import FastifyAuth from "@fastify/auth";
+import cors from "@fastify/cors";
 import FastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
-import FastifyAuth from "@fastify/auth";
+import Fastify from "fastify";
 
 import { verifyTokenPlugin } from "./src/plugins/auth";
 import { prismaPlugin } from "./src/plugins/prisma";
 
-import { transactionSchema } from "./src/schemas/transaction";
-import { userSchema } from "./src/schemas/user";
 import { categorySchema } from "./src/schemas/category";
 import { errorSchema } from "./src/schemas/error";
+import { transactionSchema } from "./src/schemas/transaction";
+import { userSchema } from "./src/schemas/user";
 
-import { usersRoutes } from "./src/routes/users";
 import { categoriesRoutes } from "./src/routes/categories";
 import { transactionsRoutes } from "./src/routes/transactions";
+import { usersRoutes } from "./src/routes/users";
 
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || "0.0.0.0";
@@ -32,6 +33,12 @@ fastify.register(FastifySwagger, {
   },
 });
 
+fastify.register(cors, {
+  // TODO: Configure CORS properly for production
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+});
+
 fastify.register(prismaPlugin);
 fastify.register(verifyTokenPlugin);
 fastify.register(FastifyAuth);
@@ -40,9 +47,9 @@ fastify.register(fastifySwaggerUi, {
   routePrefix: "/docs",
 });
 
-fastify.register(transactionsRoutes);
-fastify.register(categoriesRoutes);
-fastify.register(usersRoutes);
+fastify.register(transactionsRoutes, { prefix: "/api" });
+fastify.register(categoriesRoutes, { prefix: "/api" });
+fastify.register(usersRoutes, { prefix: "/api" });
 
 fastify.addSchema(transactionSchema);
 fastify.addSchema(categorySchema);
@@ -53,6 +60,7 @@ const start = async () => {
   try {
     // TODO: Add env variable zod validation
     const port = Number(PORT);
+
     await fastify.listen({ host: HOST, port });
   } catch (error) {
     fastify.log.error(error);
