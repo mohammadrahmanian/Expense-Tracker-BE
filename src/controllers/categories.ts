@@ -1,4 +1,4 @@
-import { Category } from "@prisma/client";
+import { Category, Type } from "@prisma/client";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { CATEGORY_CONFIG } from "../config/constants.js";
 import { CategoryWithChildren } from "../types/category.js";
@@ -159,14 +159,17 @@ export const createCategory = async (
   try {
     const { user, server } = req;
 
-    const {
-      id: _,
-      userId: __,
-      createdAt: ___,
-      updatedAt: ____,
-      parentId,
-      ...allowedFields
-    } = req.body;
+    // Extract only the allowed fields from the request body
+    const { name, type, description, color, icon, parentId } = req.body;
+
+    // Create allowedFields object with only valid Category fields
+    const allowedFields = {
+      name,
+      type,
+      description,
+      color,
+      icon,
+    };
 
     if (parentId) {
       await validateCategoryWithParent({
@@ -218,14 +221,15 @@ export const editCategory = async (
     const { user, server } = req;
     const { id } = req.params;
 
-    const {
-      id: _,
-      userId: __,
-      createdAt: ___,
-      updatedAt: ____,
-      parentId,
-      ...allowedFields
-    } = req.body;
+    // Extract only the allowed fields from the request body
+    const { name, type, description, color, icon, parentId } = req.body;
+
+    // Create allowedFields object with only valid Category fields (excluding undefined values)
+    const allowedFields = Object.fromEntries(
+      Object.entries({ name, type, description, color, icon }).filter(
+        ([, value]) => value !== undefined
+      )
+    );
 
     if (parentId) {
       // Get current category to determine type if not provided in update
@@ -241,7 +245,7 @@ export const editCategory = async (
       await validateCategoryWithParent({
         userId: user.id,
         parentId,
-        categoryType: allowedFields.type || currentCategory.type,
+        categoryType: (allowedFields.type as Type) || currentCategory.type,
         server,
         categoryId: id,
       });
