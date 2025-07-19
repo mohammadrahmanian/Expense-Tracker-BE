@@ -136,14 +136,13 @@ export const editTransaction = async (
   const { user, server } = req;
 
   const { title, amount, type, description, categoryId, date } = req.body;
-  // Create allowedFields object with only valid Category fields (excluding undefined values)
+  // Create allowedFields object with only scalar fields (excluding categoryId and undefined values)
   const allowedFields = Object.fromEntries(
     Object.entries({
       title,
       amount,
       type,
       description,
-      categoryId,
       date,
     }).filter(([, value]) => value !== undefined)
   );
