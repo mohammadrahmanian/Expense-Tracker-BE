@@ -44,8 +44,10 @@ export const createUser = async (
     );
 
     return reply.status(201).send({
-      id: user.id,
-      email: user.email,
+      user: {
+        id: user.id,
+        email: user.email,
+      },
       token,
     });
   } catch (error) {
@@ -112,5 +114,39 @@ export const loginUser = async (
 
   return reply.send({
     token,
+    user: {
+      id: user.id,
+      email: user.email,
+    },
   });
+};
+
+export const getUser = async (req: FastifyRequest, reply: FastifyReply) => {
+  const { server, user } = req;
+  try {
+    const queriedUser = await server.prisma.user.findUnique({
+      where: { id: user.id },
+    });
+
+    if (!queriedUser) {
+      return reply.status(404).send({
+        error: "Not Found",
+        message: "User not found.",
+        statusCode: 404,
+      });
+    }
+
+    return reply.send({
+      user: {
+        id: queriedUser.id,
+        email: queriedUser.email,
+      },
+    });
+  } catch (error) {
+    return reply.status(500).send({
+      error: "Internal Server Error",
+      message: "An error occurred while retrieving the user.",
+      statusCode: 500,
+    });
+  }
 };
