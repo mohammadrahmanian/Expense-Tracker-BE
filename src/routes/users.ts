@@ -1,10 +1,15 @@
 import { FastifyInstance } from "fastify";
-import { createUser, loginUser } from "../controllers/users";
+import { createUser, getUser, loginUser } from "../controllers/users";
 
 const createUserOpts = {
   schema: {
     response: {
-      200: { $ref: "userSchema#" },
+      200: {
+        properties: {
+          token: { type: "string" },
+          user: { $ref: "userSchema#" },
+        },
+      },
     },
     body: {
       type: "object",
@@ -33,33 +38,39 @@ const loginUserOpts = {
         type: "object",
         properties: {
           token: { type: "string" },
+          user: { $ref: "userSchema#" },
         },
       },
-      401: {
+      401: { $ref: "errorSchema#" },
+      400: { $ref: "errorSchema#" },
+    },
+  },
+  handler: loginUser,
+};
+
+const getUserOpts = {
+  schema: {
+    response: {
+      200: {
         type: "object",
         properties: {
-          error: { type: "string" },
-          message: { type: "string" },
-          statusCode: { type: "number" },
-        },
-        400: {
-          type: "object",
-          properties: {
-            error: { type: "string" },
-            message: { type: "string" },
-            statusCode: { type: "number" },
-          },
+          user: { $ref: "userSchema#" },
         },
       },
     },
   },
-  handler: loginUser,
+  handler: getUser,
 };
 
 export const usersRoutes = (fastify: FastifyInstance, options, done) => {
   fastify.post("/users/register", createUserOpts);
 
   fastify.post("/users/login", loginUserOpts);
+
+  fastify.get("/users/me", {
+    ...getUserOpts,
+    preHandler: fastify.auth([fastify.verifyToken]),
+  });
 
   done();
 };
