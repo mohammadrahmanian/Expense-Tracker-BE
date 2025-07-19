@@ -13,6 +13,7 @@ import { transactionSchema } from "./src/schemas/transaction";
 import { userSchema } from "./src/schemas/user";
 
 import { categoriesRoutes } from "./src/routes/categories";
+import { dashboardRoutes } from "./src/routes/dashboard";
 import { transactionsRoutes } from "./src/routes/transactions";
 import { usersRoutes } from "./src/routes/users";
 
@@ -49,6 +50,7 @@ fastify.register(fastifySwaggerUi, {
 
 fastify.register(transactionsRoutes, { prefix: "/api" });
 fastify.register(categoriesRoutes, { prefix: "/api" });
+fastify.register(dashboardRoutes, { prefix: "/api" });
 fastify.register(usersRoutes, { prefix: "/api" });
 
 fastify.addSchema(transactionSchema);
