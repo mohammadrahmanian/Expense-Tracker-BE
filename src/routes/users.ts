@@ -4,7 +4,7 @@ import { createUser, getUser, loginUser } from "../controllers/users";
 const createUserOpts = {
   schema: {
     response: {
-      200: {
+      201: {
         properties: {
           token: { type: "string" },
           user: { $ref: "userSchema#" },
