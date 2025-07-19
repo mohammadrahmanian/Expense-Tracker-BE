@@ -14,6 +14,16 @@ export const categorySchema = {
       type: "string",
       description: "Name of the category",
     },
+    color: {
+      type: "string",
+      description: "Color associated with the category",
+      nullable: true,
+    },
+    icon: {
+      type: "string",
+      description: "Icon associated with the category",
+      nullable: true,
+    },
     type: {
       type: "string",
       enum: ["INCOME", "EXPENSE"],
