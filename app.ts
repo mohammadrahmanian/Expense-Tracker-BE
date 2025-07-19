@@ -33,6 +33,12 @@ fastify.register(FastifySwagger, {
   },
 });
 
+fastify.register(cors, {
+  // TODO: Configure CORS properly for production
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+});
+
 fastify.register(prismaPlugin);
 fastify.register(verifyTokenPlugin);
 fastify.register(FastifyAuth);
@@ -54,10 +60,7 @@ const start = async () => {
   try {
     // TODO: Add env variable zod validation
     const port = Number(PORT);
-    await fastify.register(cors, {
-      origin: "*",
-      methods: ["GET", "POST", "PUT", "DELETE"],
-    });
+
     await fastify.listen({ host: HOST, port });
   } catch (error) {
     fastify.log.error(error);
