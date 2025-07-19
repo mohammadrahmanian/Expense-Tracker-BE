@@ -60,14 +60,15 @@ export const createTransaction = async (
 ) => {
   const { user, server } = req;
 
-  const {
-    id: _,
-    userId: __,
-    createdAt: ___,
-    updatedAt: ____,
-    categoryId,
-    ...allowedFields
-  } = req.body;
+  // Extract only the allowed fields from the request body
+  const { title, amount, type, description, categoryId, date } = req.body;
+  const allowedFields = {
+    title,
+    amount,
+    type,
+    description,
+    date,
+  };
 
   try {
     await validateTransactionWithCategory({
@@ -134,19 +135,23 @@ export const editTransaction = async (
   const { id } = req.params;
   const { user, server } = req;
 
-  const {
-    id: _,
-    userId: __,
-    createdAt: ___,
-    updatedAt: ____,
-    categoryId,
-    ...allowedFields
-  } = req.body;
+  const { title, amount, type, description, categoryId, date } = req.body;
+  // Create allowedFields object with only valid Category fields (excluding undefined values)
+  const allowedFields = Object.fromEntries(
+    Object.entries({
+      title,
+      amount,
+      type,
+      description,
+      categoryId,
+      date,
+    }).filter(([, value]) => value !== undefined)
+  );
 
   if (categoryId !== undefined) {
     try {
       await validateTransactionWithCategory({
-        transactionType: allowedFields.type,
+        transactionType: allowedFields.type as Transaction["type"],
         categoryId,
         userId: user.id,
         server,
