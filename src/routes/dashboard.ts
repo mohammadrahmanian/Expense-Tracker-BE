@@ -12,8 +12,26 @@ const getDashboardStatsOpts = {
             description: "Total income from all INCOME transactions",
           },
           totalExpenses: {
-            type: "number", 
+            type: "number",
             description: "Total expenses from all EXPENSE transactions",
+          },
+          currentBalance: {
+            type: "number",
+            description:
+              "Current balance calculated as total income minus total expenses",
+          },
+          monthlyIncome: {
+            type: "number",
+            description: "Total income for the current month",
+          },
+          monthlyExpenses: {
+            type: "number",
+            description: "Total expenses for the current month",
+          },
+          monthlySaving: {
+            type: "number",
+            description:
+              "Monthly saving calculated as monthly income minus monthly expenses",
           },
         },
         required: ["totalIncome", "totalExpenses"],
