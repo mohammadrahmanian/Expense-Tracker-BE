@@ -1,7 +1,8 @@
 import FastifyAuth from "@fastify/auth";
-import cors from "@fastify/cors";
+import FastifyCors from "@fastify/cors";
+import FastifyMultipart from "@fastify/multipart";
 import FastifySwagger from "@fastify/swagger";
-import fastifySwaggerUi from "@fastify/swagger-ui";
+import FastifySwaggerUi from "@fastify/swagger-ui";
 import Fastify from "fastify";
 
 import { verifyTokenPlugin } from "./src/plugins/auth";
@@ -34,17 +35,19 @@ fastify.register(FastifySwagger, {
   },
 });
 
-fastify.register(cors, {
+fastify.register(FastifyCors, {
   // TODO: Configure CORS properly for production
   origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE"],
 });
 
+fastify.register(FastifyMultipart)
+
 fastify.register(prismaPlugin);
 fastify.register(verifyTokenPlugin);
 fastify.register(FastifyAuth);
 
-fastify.register(fastifySwaggerUi, {
+fastify.register(FastifySwaggerUi, {
   routePrefix: "/docs",
 });
 

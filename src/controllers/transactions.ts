@@ -1,10 +1,12 @@
-import { Transaction } from "@prisma/client";
+import { Transaction, Type } from "@prisma/client";
+import { parse } from "csv-parse";
 import {
   FastifyInstance,
   FastifyReply,
   FastifyRequest,
   RouteHandlerMethod,
 } from "fastify";
+import { validateRecord } from "../utils/vlidators";
 
 type RequestParams = {
   id: string;
@@ -205,4 +207,81 @@ const validateTransactionWithCategory = async ({
       `Transaction type must match category type (${category.type})`
     );
   }
+};
+
+export const uploadTransactions = async (
+  request: FastifyRequest,
+  reply: FastifyReply
+) => {
+  const { server, user } = request;
+
+  const data = await request.file();
+
+  if (!data) {
+    return reply.code(400).send({
+      error: "Bad Request",
+      message: "No file uploaded",
+    });
+  }
+
+  const parser = parse({
+    delimiter: ",",
+    columns: ["type", "date", "amount", "category", "title"],
+  });
+
+  data.file.pipe(parser);
+
+  let failedRecords = 0;
+  let successfulRecords = 0;
+  for await (const record of parser) {
+    try {
+      const validatedRecord = validateRecord(record);
+      const findOrCreateCategory = async () => {
+        const category = await server.prisma.category.upsert({
+          where: {
+            name_userId: {
+              name: validatedRecord.category,
+              userId: user.id,
+            },
+          },
+          update: {},
+          create: {
+            name: validatedRecord.category,
+            type: validatedRecord.type as Type,
+            userId: user.id,
+          },
+        });
+        return category;
+      };
+      const category = await findOrCreateCategory();
+      if (validatedRecord.type !== category.type) {
+        throw new Error(
+          `Transaction type (${validatedRecord.type}) must match category type (${category.type})`
+        );
+      }
+      const transaction = await server.prisma.transaction.create({
+        data: {
+          ...validatedRecord,
+          type: validatedRecord.type as Type,
+          user: {
+            connect: { id: user.id },
+          },
+          category: {
+            connect: { id: category.id },
+          },
+        },
+      });
+      server.log.info(`Transaction created: ${transaction.id}`);
+      successfulRecords++;
+    } catch (error) {
+      server.log.error(`Validation error: ${error.message}`);
+      failedRecords++;
+    }
+  }
+
+  return reply.send({
+    message: "File processed successfully",
+    successfulRecords,
+    failedRecords,
+  });
 };
