@@ -27,7 +27,9 @@ export function validateRecord(record: CsvRecord): ValidatedRecord {
   if (!["income", "expense"].includes(record.type.toLowerCase())) {
     throw new Error("Invalid transaction type");
   }
-  record.type = record.type.toLowerCase() === "income" ? "INCOME" : "EXPENSE";
+
+  const validatedType: Type =
+    record.type.toLowerCase() === "income" ? "INCOME" : "EXPENSE";
 
   const normalizedAmount = record.amount.replace(/,/g, ".");
   const parsedAmount = parseFloat(normalizedAmount);
@@ -35,14 +37,17 @@ export function validateRecord(record: CsvRecord): ValidatedRecord {
     throw new Error("Invalid amount format");
   }
 
-  record.amount = parsedAmount.toFixed(2);
+  const validatedAmount = parsedAmount.toFixed(2);
 
   const parsedDate = parse(record.date, "dd.MM.yyyy", new Date());
-  record.date = parsedDate.toISOString();
+  const validateDate = parsedDate.toISOString();
 
   const validatedRecord: ValidatedRecord = {
-    ...record,
-    type: record.type as Type,
+    amount: validatedAmount,
+    type: validatedType,
+    date: validateDate,
+    category: record.category.trim(),
+    title: record.title.trim(),
   };
 
   return validatedRecord;
