@@ -41,7 +41,12 @@ fastify.register(FastifyCors, {
   methods: ["GET", "POST", "PUT", "DELETE"],
 });
 
-fastify.register(FastifyMultipart)
+fastify.register(FastifyMultipart, {
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10 MB
+    files: 1,
+  }
+})
 
 fastify.register(prismaPlugin);
 fastify.register(verifyTokenPlugin);

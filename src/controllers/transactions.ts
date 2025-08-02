@@ -1,4 +1,4 @@
-import { Transaction, Type } from "@prisma/client";
+import { Transaction } from "@prisma/client";
 import { parse } from "csv-parse";
 import {
   FastifyInstance,
@@ -6,7 +6,7 @@ import {
   FastifyRequest,
   RouteHandlerMethod,
 } from "fastify";
-import { validateRecord } from "../utils/vlidators";
+import { validateRecord } from "../utils/validators";
 
 type RequestParams = {
   id: string;
@@ -224,6 +224,13 @@ export const uploadTransactions = async (
     });
   }
 
+  if (data.mimetype !== "text/csv") {
+    return reply.code(400).send({
+      error: "Bad Request",
+      message: "Invalid file type. Only CSV files are allowed.",
+    });
+  }
+
   const parser = parse({
     delimiter: ",",
     columns: ["type", "date", "amount", "category", "title"],
@@ -247,7 +254,7 @@ export const uploadTransactions = async (
           update: {},
           create: {
             name: validatedRecord.category,
-            type: validatedRecord.type as Type,
+            type: validatedRecord.type,
             userId: user.id,
           },
         });
@@ -262,7 +269,7 @@ export const uploadTransactions = async (
       const transaction = await server.prisma.transaction.create({
         data: {
           ...validatedRecord,
-          type: validatedRecord.type as Type,
+          type: validatedRecord.type,
           user: {
             connect: { id: user.id },
           },
