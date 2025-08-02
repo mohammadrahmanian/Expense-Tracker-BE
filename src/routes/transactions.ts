@@ -1,13 +1,14 @@
 import { FastifyInstance } from "fastify";
 
-import { Transaction } from "../types/transaction";
 import {
   createTransaction,
   deleteTransaction,
   editTransaction,
   getTransaction,
   getTransactions,
+  uploadTransactions,
 } from "../controllers/transactions";
+import { Transaction } from "../types/transaction";
 
 type TransactionParams = {
   id: string;
@@ -98,6 +99,23 @@ const editTransactionOpts = {
   handler: editTransaction,
 };
 
+const uploadTransactionsOpts = {
+  schema: {
+    response: {
+      200: {
+        type: "object",
+        properties: {
+          message: { type: "string" },
+          successfulRecords: { type: "number" },
+          failedRecords: { type: "number" },
+        },
+      },
+      400: { $ref: "errorSchema#" },
+    },
+  },
+  handler: uploadTransactions,
+};
+
 export const transactionsRoutes = (fastify: FastifyInstance, options, done) => {
   fastify.get("/transactions", {
     ...getTransactionsOpts,
@@ -124,6 +142,11 @@ export const transactionsRoutes = (fastify: FastifyInstance, options, done) => {
 
   fastify.put("/transactions/:id", {
     ...editTransactionOpts,
+    preHandler: fastify.auth([fastify.verifyToken]),
+  });
+
+  fastify.post("/transactions/upload", {
+    ...uploadTransactionsOpts,
     preHandler: fastify.auth([fastify.verifyToken]),
   });
 
