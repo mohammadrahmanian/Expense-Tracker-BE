@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "tsx app.ts",
+    "test": "vitest --watch",
     "dev": "tsx --watch app.ts"
   },
   "type": "module",
@@ -32,13 +33,16 @@
     "fastify-cli": "^7.4.0",
     "fastify-plugin": "^5.0.0",
     "jsonwebtoken": "^9.0.2",
-    "prisma": "^6.10.1",
+    "tsafe": "^1.8.10",
     "tsx": "^4.19.4",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@flydotio/dockerfile": "^0.7.10",
     "@types/node": "^22.15.29",
-    "ts-node": "^10.9.2"
+    "prisma": "^6.16.1",
+    "tap": "^21.1.0",
+    "ts-node": "^10.9.2",
+    "vitest": "^3.2.4"
   }
 }
