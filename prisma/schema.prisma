@@ -9,34 +9,36 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  password     String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  isDeleted    Boolean       @default(false)
-  deletedAt    DateTime?
-  categories   Category[]
-  transactions Transaction[]
+  id                   String                 @id @default(cuid())
+  email                String                 @unique
+  password             String
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  isDeleted            Boolean                @default(false)
+  deletedAt            DateTime?
+  categories           Category[]
+  transactions         Transaction[]
+  RecurringTransaction RecurringTransaction[]
 
   @@index([email])
 }
 
 model Category {
-  id           String        @id @default(cuid())
-  name         String
-  type         Type
-  description  String?
-  color        String?
-  icon         String?
-  parentId     String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  parent       Category?     @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
-  children     Category[]    @relation("CategoryHierarchy")
-  transactions Transaction[]
-  userId       String
-  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  id                   String                 @id @default(cuid())
+  name                 String
+  type                 Type
+  description          String?
+  color                String?
+  icon                 String?
+  parentId             String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  parent               Category?              @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children             Category[]             @relation("CategoryHierarchy")
+  transactions         Transaction[]
+  userId               String
+  user                 User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  RecurringTransaction RecurringTransaction[]
 
   @@unique([name, userId])
   @@index([userId])
@@ -64,7 +66,38 @@ model Transaction {
   @@index([type])
 }
 
+model RecurringTransaction {
+  id                  String              @id @default(cuid())
+  amount              Decimal             @db.Decimal(10, 2)
+  title               String
+  type                Type
+  description         String?
+  startDate           DateTime            @default(now())
+  endDate             DateTime?
+  recurrenceFrequency RecurrenceFrequency
+  nextOccurrence      DateTime
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  userId              String
+  user                User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  categoryId          String
+  category            Category            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  isActive            Boolean             @default(true)
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([nextOccurrence])
+  @@index([isActive])
+}
+
 enum Type {
   INCOME
   EXPENSE
+}
+
+enum RecurrenceFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
 }
