@@ -8,6 +8,11 @@ export const transactionSchema = {
     date: { type: "string" },
     description: { type: "string" },
     categoryId: { type: "string" },
+    isRecurring: { type: "boolean" },
+    recurrence: {
+      type: "string",
+      enum: ["DAILY", "WEEKLY", "MONTHLY", "YEARLY"],
+    },
     type: { type: "string", enum: ["INCOME", "EXPENSE"] },
   },
 };

@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 
+import { Transaction } from "@prisma/client";
 import {
   createTransaction,
   deleteTransaction,
@@ -8,10 +9,9 @@ import {
   getTransactions,
   uploadTransactions,
 } from "../controllers/transactions";
-import { Transaction } from "../types/transaction";
 
 type TransactionParams = {
-  id: string;
+  id: Transaction["id"];
 };
 
 const getTransactionsOpts = {
