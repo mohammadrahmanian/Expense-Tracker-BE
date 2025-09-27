@@ -89,7 +89,6 @@ export const createTransaction = async (
     amount,
     type,
     description,
-    isRecurring,
     recurrenceFrequency,
     date,
   };
@@ -111,9 +110,10 @@ export const createTransaction = async (
 
   if (isRecurring) {
     try {
-      const recurringTransaction = await createUserRecurringTransaction({
+      const { date, ...recurringTransactionAllowedFields } = allowedFields;
+      await createUserRecurringTransaction({
         recurringTransaction: {
-          ...allowedFields,
+          ...recurringTransactionAllowedFields,
           startDate: date || new Date(),
           endDate: null,
         },
@@ -121,17 +121,16 @@ export const createTransaction = async (
         categoryId,
         prisma,
       });
+      const { recurrenceFrequency, ...transactionAllowedFields } =
+        allowedFields;
       const transaction = await createUserTransaction({
-        transaction: allowedFields,
+        transaction: transactionAllowedFields,
         userId: user.id,
         categoryId,
         prisma,
       });
 
-      return reply.code(201).send({
-        transaction,
-        recurringTransaction,
-      });
+      return reply.code(201).send(transaction);
     } catch (error) {
       log.error("Error creating recurring transaction:", error);
       return reply.code(500).send({

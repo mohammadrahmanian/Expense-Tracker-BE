@@ -48,6 +48,8 @@ const createTransactionOpts = {
         description: { $ref: "transactionSchema#/properties/description" },
         categoryId: { $ref: "transactionSchema#/properties/categoryId" },
         type: { $ref: "transactionSchema#/properties/type" },
+        isRecurring: { $ref: "transactionSchema#/properties/isRecurring" },
+        recurrenceFrequency: { $ref: "transactionSchema#/properties/recurrenceFrequency" },
       },
     },
     response: {

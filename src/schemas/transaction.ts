@@ -9,7 +9,7 @@ export const transactionSchema = {
     description: { type: "string" },
     categoryId: { type: "string" },
     isRecurring: { type: "boolean" },
-    recurrence: {
+    recurrenceFrequency: {
       type: "string",
       enum: ["DAILY", "WEEKLY", "MONTHLY", "YEARLY"],
     },
