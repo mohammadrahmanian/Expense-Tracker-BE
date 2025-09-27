@@ -51,3 +51,60 @@ export const createUserRecurringTransaction = async ({
     throw new Error(`Failed to create recurring transaction: ${error.message}`);
   }
 };
+
+export const getActiveRecurringTransactionsForUser = async ({
+  userId,
+  prisma,
+}: {
+  userId: string;
+  prisma: PrismaClient;
+}) => {
+  try {
+    const transactions = await prisma.recurringTransaction.findMany({
+      where: { userId, isActive: true },
+    });
+    return transactions;
+  } catch (error) {
+    throw new Error(`Failed to fetch recurring transactions: ${error.message}`);
+  }
+};
+
+export const deactivateRecurringTransaction = async ({
+  id,
+  prisma,
+}: {
+  id: string;
+  prisma: PrismaClient;
+}) => {
+  try {
+    const updated = await prisma.recurringTransaction.update({
+      where: { id },
+      data: { isActive: false },
+    });
+    return updated;
+  } catch (error) {
+    throw new Error(
+      `Failed to deactivate recurring transaction: ${error.message}`
+    );
+  }
+};
+
+export const updateNextOccurrence = async ({
+  id,
+  nextOccurrence,
+  prisma,
+}: {
+  id: string;
+  nextOccurrence: Date;
+  prisma: PrismaClient;
+}) => {
+  try {
+    const updated = await prisma.recurringTransaction.update({
+      where: { id },
+      data: { nextOccurrence },
+    });
+    return updated;
+  } catch (error) {
+    throw new Error(`Failed to update next occurrence: ${error.message}`);
+  }
+};
