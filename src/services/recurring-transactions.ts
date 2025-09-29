@@ -52,6 +52,21 @@ export const createUserRecurringTransaction = async ({
   }
 };
 
+export const getAllActiveRecurringTransactions = async ({
+  prisma,
+}: {
+  prisma: PrismaClient;
+}) => {
+  try {
+    const transactions = await prisma.recurringTransaction.findMany({
+      where: { isActive: true, nextOccurrence: { lte: new Date() } },
+    });
+    return transactions;
+  } catch (error) {
+    throw new Error(`Failed to fetch recurring transactions: ${error.message}`);
+  }
+};
+
 export const getActiveRecurringTransactionsForUser = async ({
   userId,
   prisma,
@@ -89,7 +104,7 @@ export const deactivateRecurringTransaction = async ({
   }
 };
 
-export const updateNextOccurrence = async ({
+export const updateRecurringTransactionNextOccurrence = async ({
   id,
   nextOccurrence,
   prisma,
