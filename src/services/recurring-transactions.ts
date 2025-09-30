@@ -67,7 +67,7 @@ export const getAllActiveRecurringTransactions = async ({
   }
 };
 
-export const getActiveRecurringTransactionsForUser = async ({
+export const getUserRecurringTransactions = async ({
   userId,
   prisma,
 }: {
@@ -76,7 +76,7 @@ export const getActiveRecurringTransactionsForUser = async ({
 }) => {
   try {
     const transactions = await prisma.recurringTransaction.findMany({
-      where: { userId, isActive: true },
+      where: { userId },
     });
     return transactions;
   } catch (error) {

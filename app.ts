@@ -17,11 +17,15 @@ import { userSchema } from "./src/schemas/user";
 import { createTransactionFromRecurringTransaction } from "./src/jobs/recurring-transactions";
 import { categoriesRoutes } from "./src/routes/categories";
 import { dashboardRoutes } from "./src/routes/dashboard";
+import { recurringTransactionsRoutes } from "./src/routes/recurring-transactions";
 import { transactionsRoutes } from "./src/routes/transactions";
 import { usersRoutes } from "./src/routes/users";
+import { recurringTransactionSchema } from "./src/schemas/recurring-transaction";
 
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || "0.0.0.0";
+
+const API_PREFIX = "/api";
 
 const fastify = Fastify({
   logger: true,
@@ -58,15 +62,17 @@ fastify.register(FastifySwaggerUi, {
   routePrefix: "/docs",
 });
 
-fastify.register(transactionsRoutes, { prefix: "/api" });
-fastify.register(categoriesRoutes, { prefix: "/api" });
-fastify.register(dashboardRoutes, { prefix: "/api" });
-fastify.register(usersRoutes, { prefix: "/api" });
-
 fastify.addSchema(transactionSchema);
+fastify.addSchema(recurringTransactionSchema);
 fastify.addSchema(categorySchema);
 fastify.addSchema(userSchema);
 fastify.addSchema(errorSchema);
+
+fastify.register(transactionsRoutes, { prefix: API_PREFIX });
+fastify.register(recurringTransactionsRoutes, { prefix: API_PREFIX });
+fastify.register(categoriesRoutes, { prefix: API_PREFIX });
+fastify.register(dashboardRoutes, { prefix: API_PREFIX });
+fastify.register(usersRoutes, { prefix: API_PREFIX });
 
 fastify.register(FastifyCron, {
   jobs: [
