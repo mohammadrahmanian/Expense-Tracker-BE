@@ -60,6 +60,7 @@ model Transaction {
   categoryId  String
   category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
+  @@unique([id, userId])
   @@index([userId])
   @@index([categoryId])
   @@index([date])

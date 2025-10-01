@@ -41,7 +41,7 @@ export const validateUserTransactionType = async ({
   userId,
   prisma,
 }: {
-  transactionType?: Transaction["type"];
+  transactionType: Transaction["type"];
   categoryId: string;
   userId: string;
   prisma: PrismaClient;

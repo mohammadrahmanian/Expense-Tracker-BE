@@ -89,7 +89,6 @@ export const createTransaction = async (
     amount,
     type,
     description,
-    recurrenceFrequency,
     date,
   };
 
@@ -114,6 +113,7 @@ export const createTransaction = async (
       await createUserRecurringTransaction({
         recurringTransaction: {
           ...recurringTransactionAllowedFields,
+          recurrenceFrequency,
           startDate: date || new Date(),
           endDate: null,
         },
@@ -121,10 +121,8 @@ export const createTransaction = async (
         categoryId,
         prisma,
       });
-      const { recurrenceFrequency, ...transactionAllowedFields } =
-        allowedFields;
       const transaction = await createUserTransaction({
-        transaction: transactionAllowedFields,
+        transaction: allowedFields,
         userId: user.id,
         categoryId,
         prisma,
@@ -201,8 +199,17 @@ export const editTransaction = async (
 
   if (categoryId !== undefined) {
     try {
+      const effectiveType =
+        (allowedFields.type as Transaction["type"] | undefined) ??
+        (
+          await prisma.transaction.findUnique({
+            where: { id, userId: user.id },
+            select: { type: true },
+          })
+        )?.type;
+
       await validateUserTransactionType({
-        transactionType: allowedFields.type as Transaction["type"],
+        transactionType: effectiveType,
         categoryId,
         userId: user.id,
         prisma,
