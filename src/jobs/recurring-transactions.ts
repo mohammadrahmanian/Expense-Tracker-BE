@@ -6,7 +6,7 @@ import {
   updateRecurringTransactionNextOccurrence,
 } from "../services/recurring-transactions";
 import { createUserTransaction } from "../services/transactions";
-import { calculateNextOccurrence } from "../utils/helpers";
+import { calculateNextOccurrenceOnce } from "../utils/helpers";
 
 export const createTransactionFromRecurringTransaction = async ({
   prisma,
@@ -36,7 +36,7 @@ export const createTransactionFromRecurringTransaction = async ({
     // update nextOccurrence for each recurring transaction after creating the transaction
     let nextOccurrence: Date;
     try {
-      nextOccurrence = calculateNextOccurrence(
+      nextOccurrence = calculateNextOccurrenceOnce(
         recurringTransaction.recurrenceFrequency,
         recurringTransaction.startDate,
         recurringTransaction.nextOccurrence

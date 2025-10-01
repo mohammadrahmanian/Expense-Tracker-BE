@@ -1,15 +1,15 @@
 import { PrismaClient, RecurringTransaction } from "@prisma/client";
 import { calculateNextOccurrence } from "../utils/helpers";
 
-type RecurringTransactionInput = Omit<
+type CreateRecurringTransactionInput = Omit<
   RecurringTransaction,
   | "id"
   | "userId"
   | "createdAt"
   | "updatedAt"
-  | "categoryId"
   | "nextOccurrence"
   | "isActive"
+  | "categoryId"
 >;
 
 export const createUserRecurringTransaction = async ({
@@ -18,7 +18,7 @@ export const createUserRecurringTransaction = async ({
   prisma,
   recurringTransaction,
 }: {
-  recurringTransaction: RecurringTransactionInput;
+  recurringTransaction: CreateRecurringTransactionInput;
   userId: string;
   categoryId: string;
   prisma: PrismaClient;
@@ -86,14 +86,16 @@ export const getUserRecurringTransactions = async ({
 
 export const deactivateRecurringTransaction = async ({
   id,
+  userId,
   prisma,
 }: {
   id: string;
+  userId: string;
   prisma: PrismaClient;
 }) => {
   try {
     const updated = await prisma.recurringTransaction.update({
-      where: { id },
+      where: { id, userId },
       data: { isActive: false },
     });
     return updated;
@@ -101,6 +103,99 @@ export const deactivateRecurringTransaction = async ({
     throw new Error(
       `Failed to deactivate recurring transaction: ${error.message}`
     );
+  }
+};
+
+export const activateRecurringTransaction = async ({
+  id,
+  userId,
+  prisma,
+}: {
+  id: string;
+  userId: string;
+  prisma: PrismaClient;
+}) => {
+  try {
+    const recurrenceTransaction = await prisma.recurringTransaction.findUnique({
+      where: { id, userId },
+    });
+    if (!recurrenceTransaction) {
+      throw new Error("Recurring transaction not found");
+    }
+    const nextOccurrence = calculateNextOccurrence(
+      recurrenceTransaction.recurrenceFrequency,
+      recurrenceTransaction.startDate,
+      recurrenceTransaction.nextOccurrence
+    );
+    const updated = await prisma.recurringTransaction.update({
+      where: { id, userId },
+      data: { nextOccurrence, isActive: true },
+    });
+
+    return updated;
+  } catch (error) {
+    throw new Error(
+      `Failed to activate recurring transaction: ${error.message}`
+    );
+  }
+};
+
+export const deleteUserRecurringTransaction = async ({
+  id,
+  userId,
+  prisma,
+}: {
+  id: string;
+  userId: string;
+  prisma: PrismaClient;
+}) => {
+  try {
+    await prisma.recurringTransaction.delete({
+      where: { id, userId },
+    });
+  } catch (error) {
+    throw new Error(`Failed to delete recurring transaction: ${error.message}`);
+  }
+};
+
+type EditRecurringTransactionInput = Omit<
+  RecurringTransaction,
+  | "id"
+  | "userId"
+  | "createdAt"
+  | "updatedAt"
+  | "nextOccurrence"
+  | "isActive"
+  | "recurrenceFrequency"
+>;
+
+export const editUserRecurringTransaction = async ({
+  id,
+  userId,
+  updates,
+  prisma,
+}: {
+  id: string;
+  userId: string;
+  updates: Partial<EditRecurringTransactionInput>;
+  prisma: PrismaClient;
+}) => {
+  try {
+    const { title, description, endDate, categoryId } = updates;
+    const allowedFields: Partial<RecurringTransaction> = {
+      ...(title ? { title } : {}),
+      ...(description ? { description } : {}),
+      ...(endDate ? { endDate } : {}),
+      ...(categoryId ? { categoryId } : {}),
+    };
+
+    const updated = await prisma.recurringTransaction.update({
+      where: { id, userId },
+      data: allowedFields,
+    });
+    return updated;
+  } catch (error) {
+    throw new Error(`Failed to edit recurring transaction: ${error.message}`);
   }
 };
 

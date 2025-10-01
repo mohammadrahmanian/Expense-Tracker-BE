@@ -8,7 +8,7 @@ import { isAmong } from "tsafe";
  * @param currentOccurrence The current occurrence date
  * @returns The next occurrence date
  */
-export const calculateNextOccurrence = (
+export const calculateNextOccurrenceOnce = (
   recurrenceFrequency: RecurrenceFrequency,
   startDate: Date,
   currentOccurrence: Date
@@ -63,7 +63,7 @@ export const calculateNextOccurrence = (
       break;
     case "YEARLY":
       nextOccurrence.setUTCFullYear(_currentOccurrence.getUTCFullYear() + 1);
-      
+
       // Handle Leap year overflow for the next occurrence
       if (nextOccurrence.getUTCMonth() - _currentOccurrence.getUTCMonth() > 0) {
         nextOccurrence.setUTCDate(0); // Set to last day of previous month
@@ -76,6 +76,39 @@ export const calculateNextOccurrence = (
       }
 
       break;
+  }
+
+  return nextOccurrence;
+};
+
+export const calculateNextOccurrence = (
+  recurrenceFrequency: RecurrenceFrequency,
+  startDate: Date,
+  currentOccurrence: Date
+) => {
+  let today = new Date();
+  today = new Date(
+    Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+  );
+
+  if (currentOccurrence > today) {
+    return currentOccurrence;
+  }
+
+  let nextOccurrence = calculateNextOccurrenceOnce(
+    recurrenceFrequency,
+    startDate,
+    currentOccurrence
+  );
+  // keep calculating next occurrence until it's in the future
+  // This handles cases where the recurring transaction has been inactive
+  // and multiple occurrences need to be skipped
+  while (nextOccurrence && nextOccurrence <= today) {
+    nextOccurrence = calculateNextOccurrenceOnce(
+      recurrenceFrequency,
+      startDate,
+      nextOccurrence
+    );
   }
 
   return nextOccurrence;

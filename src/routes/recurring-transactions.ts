@@ -1,5 +1,10 @@
 import { FastifyInstance } from "fastify";
-import { getRecurringTransactions } from "../controllers/recurring-transactions";
+import {
+  deleteRecurringTransaction,
+  editRecurringTransaction,
+  getRecurringTransactions,
+  toggleRecurringTransaction,
+} from "../controllers/recurring-transactions";
 
 const getRecurringTransactionOptions = {
   schema: {
@@ -15,9 +20,68 @@ const getRecurringTransactionOptions = {
   handler: getRecurringTransactions,
 };
 
+const deleteRecurringTransactionOptions = {
+  schema: {
+    response: {
+      204: {
+        type: "null",
+      },
+      400: {
+        $ref: "errorSchema#",
+      },
+    },
+  },
+  handler: deleteRecurringTransaction,
+};
+
+const editRecurringTransactionOptions = {
+  schema: {
+    response: {
+      204: {
+        type: "null",
+      },
+      400: {
+        $ref: "errorSchema#",
+      },
+    },
+  },
+  handler: editRecurringTransaction,
+};
+
+export const toggleRecurringTransactionOptions = {
+  schema: {
+    body: {
+      type: "object",
+      properties: {
+        active: { $ref: "recurringTransactionSchema#/properties/isActive" },
+      },
+    },
+    response: {
+      204: { type: "null" },
+      400: { $ref: "errorSchema#" },
+    },
+  },
+  handler: toggleRecurringTransaction,
+};
+
 export const recurringTransactionsRoutes = async (fastify: FastifyInstance) => {
   fastify.get("/recurring-transactions", {
     ...getRecurringTransactionOptions,
+    preHandler: fastify.auth([fastify.verifyToken]),
+  });
+
+  fastify.post("/recurring-transactions/:id/toggle", {
+    ...toggleRecurringTransactionOptions,
+    preHandler: fastify.auth([fastify.verifyToken]),
+  });
+
+  fastify.put("/recurring-transactions/:id", {
+    ...editRecurringTransactionOptions,
+    preHandler: fastify.auth([fastify.verifyToken]),
+  });
+
+  fastify.delete("/recurring-transactions/:id", {
+    ...deleteRecurringTransactionOptions,
     preHandler: fastify.auth([fastify.verifyToken]),
   });
 };
