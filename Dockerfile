@@ -25,12 +25,13 @@ RUN apt-get update -qq && \
 
 # Install node modules
 COPY package-lock.json package.json ./
-RUN npm ci
-COPY prisma ./prisma
-RUN npx prisma generate
+RUN npm ci --include=dev
 
-# Copy application code
+# Copy application code (includes prisma schema)
 COPY . .
+
+# Generate Prisma Client
+RUN npx prisma generate
 
 
 # Final stage for app image
