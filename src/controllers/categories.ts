@@ -16,6 +16,7 @@ const getCategoryInclude = (
   };
 };
 
+// TODO: Store and manage category depth per category in the database for efficiency
 const getParentDepth = async (
   categoryId: string,
   server: FastifyInstance,

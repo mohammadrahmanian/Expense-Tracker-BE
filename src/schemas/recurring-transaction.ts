@@ -1,14 +1,17 @@
-export const transactionSchema = {
-  $id: "transactionSchema",
+export const recurringTransactionSchema = {
+  $id: "recurringTransactionSchema",
   type: "object",
   properties: {
     id: { type: "string" },
     title: { type: "string" },
     amount: { type: "number" },
-    date: { type: "string" },
+    date: { type: "string", format: "date-time" },
+    startDate: { type: "string", format: "date-time" },
+    endDate: { type: "string", format: "date-time" },
+    isActive: { type: "boolean" },
     description: { type: "string" },
+    nextOccurrence: { type: "string", format: "date-time" },
     categoryId: { type: "string" },
-    isRecurring: { type: "boolean" },
     recurrenceFrequency: {
       type: "string",
       enum: ["DAILY", "WEEKLY", "MONTHLY", "YEARLY"],

@@ -1,12 +1,15 @@
-import { Transaction } from "@prisma/client";
+import { RecurrenceFrequency, Transaction } from "@prisma/client";
+
 import { parse } from "csv-parse";
-import {
-  FastifyInstance,
-  FastifyReply,
-  FastifyRequest,
-  RouteHandlerMethod,
-} from "fastify";
+import { FastifyReply, FastifyRequest, RouteHandlerMethod } from "fastify";
+
 import { validateRecord } from "../utils/validators";
+
+import { createUserRecurringTransaction } from "../services/recurring-transactions";
+import {
+  createUserTransaction,
+  validateUserTransactionType,
+} from "../services/transactions";
 
 type RequestParams = {
   id: string;
@@ -57,13 +60,30 @@ export const getTransaction: RouteHandlerMethod = async (
 };
 
 export const createTransaction = async (
-  req: FastifyRequest<{ Body: Transaction }>,
+  req: FastifyRequest<{
+    Body: Transaction & {
+      isRecurring: boolean;
+      recurrenceFrequency: RecurrenceFrequency;
+    };
+  }>,
   reply: FastifyReply
 ) => {
-  const { user, server } = req;
+  const {
+    user,
+    server: { prisma, log },
+  } = req;
 
   // Extract only the allowed fields from the request body
-  const { title, amount, type, description, categoryId, date } = req.body;
+  const {
+    title,
+    amount,
+    type,
+    description,
+    categoryId,
+    isRecurring,
+    recurrenceFrequency,
+    date,
+  } = req.body;
   const allowedFields = {
     title,
     amount,
@@ -73,37 +93,64 @@ export const createTransaction = async (
   };
 
   try {
-    await validateTransactionWithCategory({
+    await validateUserTransactionType({
       transactionType: allowedFields.type,
       categoryId,
       userId: user.id,
-      server,
+      prisma,
     });
   } catch (error) {
-    server.log.error("Validation error:", error);
+    log.error("Validation error:", error);
     return reply.code(400).send({
       error: "Bad Request",
       message: error.message,
     });
   }
 
+  if (isRecurring) {
+    try {
+      const { date, ...recurringTransactionAllowedFields } = allowedFields;
+      const transaction = await prisma.$transaction(async (tx) => {
+        await createUserRecurringTransaction({
+          recurringTransaction: {
+            ...recurringTransactionAllowedFields,
+            recurrenceFrequency,
+            startDate: date || new Date(),
+            endDate: null,
+          },
+          userId: user.id,
+          categoryId,
+          prisma: tx,
+        });
+        const transaction = await createUserTransaction({
+          transaction: allowedFields,
+          userId: user.id,
+          categoryId,
+          prisma: tx,
+        });
+
+        return transaction;
+      });
+      return reply.code(201).send(transaction);
+    } catch (error) {
+      log.error("Error creating recurring transaction:", error);
+      return reply.code(500).send({
+        error: "Internal Server Error",
+      });
+    }
+  }
+
   try {
-    const transaction = await server.prisma.transaction.create({
-      data: {
-        ...allowedFields,
-        category: {
-          connect: { id: categoryId },
-        },
-        user: {
-          connect: { id: user.id },
-        },
-      },
+    const transaction = await createUserTransaction({
+      transaction: allowedFields,
+      userId: user.id,
+      categoryId,
+      prisma,
     });
 
     return reply.code(201).send(transaction);
   } catch (error) {
-    server.log.error("Error creating transaction:", error);
-
+    log.error("Error creating transaction:", error);
     return reply.code(500).send({
       error: "Internal Server Error",
     });
@@ -130,12 +177,16 @@ export const deleteTransaction = async (
   }
 };
 
+// Edit Transaction doesn't allow recurrence change because of performance issue it can cause
 export const editTransaction = async (
   req: FastifyRequest<{ Params: RequestParams; Body: Partial<Transaction> }>,
   reply: FastifyReply
 ) => {
   const { id } = req.params;
-  const { user, server } = req;
+  const {
+    user,
+    server: { prisma, log },
+  } = req;
 
   const { title, amount, type, description, categoryId, date } = req.body;
   // Create allowedFields object with only scalar fields (excluding categoryId and undefined values)
@@ -149,26 +200,74 @@ export const editTransaction = async (
     }).filter(([, value]) => value !== undefined)
   );
 
+  const transactionToBeUpdated = await prisma.transaction.findUnique({
+    where: { id },
+    select: {
+      category: { select: { type: true, id: true } },
+      type: true,
+      userId: true,
+    },
+  });
+
+  if (!transactionToBeUpdated) {
+    log.error(`Transaction with id ${id} not found`);
+    return reply.code(404).send({
+      error: "Not Found",
+      message: `Transaction with id ${id} not found`,
+    });
+  }
+
+  if (transactionToBeUpdated.userId !== user.id) {
+    log.error(`User ${user.id} is not authorized to edit transaction ${id}`);
+    // Returning 404 to avoid exposing the existence of the transaction
+    return reply.code(404).send({
+      error: "Not Found",
+      message: `Transaction with id ${id} not found`,
+    });
+  }
+
   if (categoryId !== undefined) {
     try {
-      await validateTransactionWithCategory({
-        transactionType: allowedFields.type as Transaction["type"],
+      const effectiveType =
+        (allowedFields.type as Transaction["type"] | undefined) ??
+        transactionToBeUpdated.type;
+
+      await validateUserTransactionType({
+        transactionType: effectiveType,
         categoryId,
         userId: user.id,
-        server,
+        prisma,
       });
     } catch (error) {
-      server.log.error("Validation error:", error);
+      log.error("Validation error:", error);
       return reply.code(400).send({
         error: "Bad Request",
-        message: error.message,
+        message: "Failed to edit transaction",
       });
+    }
+  } else {
+    // If categoryId is not being changed but type is being changed, validate the new type against the existing category
+    if (allowedFields.type) {
+      try {
+        await validateUserTransactionType({
+          transactionType: allowedFields.type as Transaction["type"],
+          categoryId: transactionToBeUpdated.category.id,
+          userId: user.id,
+          prisma,
+        });
+      } catch (error) {
+        log.error("Validation error:", error);
+        return reply.code(400).send({
+          error: "Bad Request",
+          message: "Failed to edit transaction",
+        });
+      }
     }
   }
 
   try {
-    await server.prisma.transaction.update({
-      where: { userId: user.id, id: id },
+    await prisma.transaction.update({
+      where: { id: id },
       data: {
         ...(categoryId ? { category: { connect: { id: categoryId } } } : {}),
         ...allowedFields,
@@ -177,35 +276,11 @@ export const editTransaction = async (
 
     return reply.code(204).send();
   } catch (error) {
-    server.log.error("Error editing transaction:", error);
-    return reply.code(500).send({
-      error: "Internal Server Error",
+    log.error("Error editing transaction:", error);
+    return reply.code(400).send({
+      error: "Bad Request",
+      message: "Failed to edit transaction",
     });
-  }
-};
-
-const validateTransactionWithCategory = async ({
-  transactionType,
-  categoryId,
-  userId,
-  server,
-}: {
-  transactionType?: Transaction["type"];
-  categoryId: string;
-  userId: string;
-  server: FastifyInstance;
-}) => {
-  const category = await server.prisma.category.findUnique({
-    where: { id: categoryId, userId },
-  });
-  if (!category) {
-    throw new Error(`Category with id ${categoryId} not found`);
-  }
-  // Ensure the transaction type matches the category type
-  if (transactionType && transactionType !== category.type) {
-    throw new Error(
-      `Transaction type must match category type (${category.type})`
-    );
   }
 };
 

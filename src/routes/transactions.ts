@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 
+import { Transaction } from "@prisma/client";
 import {
   createTransaction,
   deleteTransaction,
@@ -8,10 +9,9 @@ import {
   getTransactions,
   uploadTransactions,
 } from "../controllers/transactions";
-import { Transaction } from "../types/transaction";
 
 type TransactionParams = {
-  id: string;
+  id: Transaction["id"];
 };
 
 const getTransactionsOpts = {
@@ -48,6 +48,8 @@ const createTransactionOpts = {
         description: { $ref: "transactionSchema#/properties/description" },
         categoryId: { $ref: "transactionSchema#/properties/categoryId" },
         type: { $ref: "transactionSchema#/properties/type" },
+        isRecurring: { $ref: "transactionSchema#/properties/isRecurring" },
+        recurrenceFrequency: { $ref: "transactionSchema#/properties/recurrenceFrequency" },
       },
     },
     response: {

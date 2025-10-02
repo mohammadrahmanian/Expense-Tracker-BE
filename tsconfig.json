@@ -6,5 +6,5 @@
     "moduleResolution": "bundler",
     "module": "es2020"
   },
-  "include": ["app.ts", "./src/**/*"]
+  "include": ["app.ts", "./src/**/*", "test"]
 }
