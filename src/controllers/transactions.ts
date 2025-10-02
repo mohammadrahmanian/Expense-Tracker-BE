@@ -110,25 +110,28 @@ export const createTransaction = async (
   if (isRecurring) {
     try {
       const { date, ...recurringTransactionAllowedFields } = allowedFields;
-      await createUserRecurringTransaction({
-        recurringTransaction: {
-          ...recurringTransactionAllowedFields,
-          recurrenceFrequency,
-          startDate: date || new Date(),
-          endDate: null,
-        },
-        userId: user.id,
-        categoryId,
-        prisma,
-      });
-      const transaction = await createUserTransaction({
-        transaction: allowedFields,
-        userId: user.id,
-        categoryId,
-        prisma,
-      });
+      const transaction = await prisma.$transaction(async (tx) => {
+        await createUserRecurringTransaction({
+          recurringTransaction: {
+            ...recurringTransactionAllowedFields,
+            recurrenceFrequency,
+            startDate: date || new Date(),
+            endDate: null,
+          },
+          userId: user.id,
+          categoryId,
+          prisma: tx,
+        });
+        const transaction = await createUserTransaction({
+          transaction: allowedFields,
+          userId: user.id,
+          categoryId,
+          prisma: tx,
+        });
 
-      return reply.code(201).send(transaction);
+        return transaction;
+      });
+      return reply.code(200).send(transaction);
     } catch (error) {
       log.error("Error creating recurring transaction:", error);
       return reply.code(500).send({
@@ -145,7 +148,7 @@ export const createTransaction = async (
       prisma,
     });
 
-    return reply.code(201).send(transaction);
+    return reply.code(200).send(transaction);
   } catch (error) {
     log.error("Error creating transaction:", error);
     return reply.code(500).send({
@@ -199,6 +202,7 @@ export const editTransaction = async (
 
   const transactionToBeUpdated = await prisma.transaction.findUnique({
     where: { id },
+    select: { category: { select: { type: true } }, type: true, userId: true },
   });
 
   if (!transactionToBeUpdated) {
@@ -215,6 +219,19 @@ export const editTransaction = async (
     return reply.code(404).send({
       error: "Not Found",
       message: `Transaction with id ${id} not found`,
+    });
+  }
+
+  if (
+    allowedFields.type &&
+    transactionToBeUpdated.category.type !== allowedFields.type
+  ) {
+    log.error(
+      `Transaction type cannot be changed directly. It must match the category type (${transactionToBeUpdated.category.type})`
+    );
+    return reply.code(400).send({
+      error: "Bad Request",
+      message: "Transaction type must match the category type",
     });
   }
 

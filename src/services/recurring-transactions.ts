@@ -22,7 +22,7 @@ export const createUserRecurringTransaction = async ({
   recurringTransaction: CreateRecurringTransactionInput;
   userId: string;
   categoryId: string;
-  prisma: PrismaClient;
+  prisma: PrismaClient | Prisma.TransactionClient;
 }) => {
   let nextOccurrence: Date | null = null;
   try {
