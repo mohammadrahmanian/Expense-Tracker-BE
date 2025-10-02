@@ -9,10 +9,13 @@ import {
 const getRecurringTransactionOptions = {
   schema: {
     response: {
-      201: {
-        type: "array",
-        items: {
-          $ref: "recurringTransactionSchema#",
+      200: {
+        type: "object",
+        properties: {
+          recurringTransactions: {
+            type: "array",
+            items: { $ref: "recurringTransactionSchema#" },
+          },
         },
       },
     },
@@ -55,6 +58,7 @@ export const toggleRecurringTransactionOptions = {
       properties: {
         active: { $ref: "recurringTransactionSchema#/properties/isActive" },
       },
+      required: ["active"]
     },
     response: {
       204: { type: "null" },
