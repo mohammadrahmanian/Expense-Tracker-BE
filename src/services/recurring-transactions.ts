@@ -27,8 +27,8 @@ export const createUserRecurringTransaction = async ({
   try {
     nextOccurrence = calculateNextOccurrence(
       recurringTransaction.recurrenceFrequency,
-      new Date(),
-      new Date()
+      recurringTransaction.startDate,
+      recurringTransaction.startDate
     );
   } catch (error) {
     throw new Error(`Failed to calculate next occurrence: ${error.message}`);
