@@ -60,7 +60,11 @@ export const getAllActiveRecurringTransactions = async ({
 }) => {
   try {
     const transactions = await prisma.recurringTransaction.findMany({
-      where: { isActive: true, nextOccurrence: { lte: new Date() } },
+      where: {
+        isActive: true,
+        nextOccurrence: { lte: new Date() },
+        OR: [{ endDate: { gte: new Date() } }, { endDate: null }],
+      },
     });
     return transactions;
   } catch (error) {
