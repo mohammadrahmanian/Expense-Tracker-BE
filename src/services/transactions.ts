@@ -46,7 +46,7 @@ export const validateUserTransactionType = async ({
   userId: string;
   prisma: PrismaClient;
 }) => {
-  const category = await prisma.category.findUnique({
+  const category = await prisma.category.findFirst({
     where: { id: categoryId, userId },
   });
   if (!category) {
