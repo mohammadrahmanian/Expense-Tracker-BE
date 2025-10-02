@@ -197,16 +197,32 @@ export const editTransaction = async (
     }).filter(([, value]) => value !== undefined)
   );
 
+  const transactionToBeUpdated = await prisma.transaction.findUnique({
+    where: { id },
+  });
+
+  if (!transactionToBeUpdated) {
+    log.error(`Transaction with id ${id} not found`);
+    return reply.code(404).send({
+      error: "Not Found",
+      message: `Transaction with id ${id} not found`,
+    });
+  }
+
+  if (transactionToBeUpdated.userId !== user.id) {
+    log.error(`User ${user.id} is not authorized to edit transaction ${id}`);
+    // Returning 404 to avoid exposing the existence of the transaction
+    return reply.code(404).send({
+      error: "Not Found",
+      message: `Transaction with id ${id} not found`,
+    });
+  }
+
   if (categoryId !== undefined) {
     try {
       const effectiveType =
         (allowedFields.type as Transaction["type"] | undefined) ??
-        (
-          await prisma.transaction.findUnique({
-            where: { id, userId: user.id },
-            select: { type: true },
-          })
-        )?.type;
+        transactionToBeUpdated.type;
 
       await validateUserTransactionType({
         transactionType: effectiveType,
@@ -218,14 +234,14 @@ export const editTransaction = async (
       log.error("Validation error:", error);
       return reply.code(400).send({
         error: "Bad Request",
-        message: error.message,
+        message: "Failed to edit transaction",
       });
     }
   }
 
   try {
     await prisma.transaction.update({
-      where: { userId: user.id, id: id },
+      where: { id: id },
       data: {
         ...(categoryId ? { category: { connect: { id: categoryId } } } : {}),
         ...allowedFields,
@@ -235,8 +251,9 @@ export const editTransaction = async (
     return reply.code(204).send();
   } catch (error) {
     log.error("Error editing transaction:", error);
-    return reply.code(500).send({
-      error: "Internal Server Error",
+    return reply.code(400).send({
+      error: "Bad Request",
+      message: "Failed to edit transaction",
     });
   }
 };
