@@ -1,4 +1,5 @@
 import { PrismaClient, RecurringTransaction } from "@prisma/client";
+import { FastifyBaseLogger } from "fastify";
 import { calculateNextOccurrence } from "../utils/helpers";
 
 type CreateRecurringTransactionInput = Omit<
@@ -174,11 +175,13 @@ export const editUserRecurringTransaction = async ({
   userId,
   updates,
   prisma,
+  log,
 }: {
   id: string;
   userId: string;
   updates: Partial<EditRecurringTransactionInput>;
   prisma: PrismaClient;
+  log: FastifyBaseLogger;
 }) => {
   try {
     const { title, description, endDate, categoryId } = updates;
@@ -188,6 +191,49 @@ export const editUserRecurringTransaction = async ({
       ...(endDate ? { endDate } : {}),
       ...(categoryId ? { categoryId } : {}),
     };
+
+    const recurringTransaction = await prisma.recurringTransaction.findUnique({
+      where: { id },
+    });
+
+    if (!recurringTransaction) {
+      log.error(
+        `User ${userId} attempted to edit non-existent recurring transaction ${id}`
+      );
+      throw new Error("Recurring transaction not found");
+    }
+
+    if (recurringTransaction.userId !== userId) {
+      log.error(
+        `User ${userId} attempted to edit recurring transaction ${id} they do not own`
+      );
+      throw new Error("Recurring transaction not found");
+    }
+
+    if (categoryId) {
+      const category = await prisma.category.findUnique({
+        where: { id: categoryId },
+      });
+      if (!category) {
+        log.error(
+          `User ${userId} attempted to use non-existent category ${categoryId}`
+        );
+        throw new Error("Category not found");
+      }
+      if (category.userId !== userId) {
+        log.error(
+          `User ${userId} attempted to use category ${categoryId} they do not own`
+        );
+        throw new Error("Category not found");
+      }
+
+      if (recurringTransaction.type !== category.type) {
+        log.error(
+          `User ${userId} attempted to change recurring transaction ${id} to category ${categoryId} with mismatched type`
+        );
+        throw new Error("Category type does not match transaction type");
+      }
+    }
 
     const updated = await prisma.recurringTransaction.update({
       where: { id, userId },

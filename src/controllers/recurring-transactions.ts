@@ -73,6 +73,7 @@ export const editRecurringTransaction = async (
       userId: user.id,
       updates,
       prisma: server.prisma,
+      log: server.log,
     });
     return reply.code(204).send();
   } catch (error) {
