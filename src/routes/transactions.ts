@@ -53,7 +53,7 @@ const createTransactionOpts = {
       },
     },
     response: {
-      200: { $ref: "transactionSchema#" },
+      201: { $ref: "transactionSchema#" },
       400: { $ref: "errorSchema#" },
     },
   },
