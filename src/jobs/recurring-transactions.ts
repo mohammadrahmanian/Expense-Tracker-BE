@@ -20,19 +20,6 @@ export const createTransactionFromRecurringTransaction = async ({
   });
 
   for (const recurringTransaction of activeRecurringTransactions) {
-    await createUserTransaction({
-      transaction: {
-        amount: recurringTransaction.amount,
-        date: recurringTransaction.nextOccurrence,
-        title: recurringTransaction.title,
-        description: recurringTransaction.description || undefined,
-        type: recurringTransaction.type,
-      },
-      userId: recurringTransaction.userId,
-      categoryId: recurringTransaction.categoryId,
-      prisma,
-    });
-
     // update nextOccurrence for each recurring transaction after creating the transaction
     let nextOccurrence: Date;
     try {
@@ -48,10 +35,25 @@ export const createTransactionFromRecurringTransaction = async ({
       continue; // skip updating this recurring transaction
     }
 
-    await updateRecurringTransactionNextOccurrence({
-      id: recurringTransaction.id,
-      nextOccurrence,
-      prisma,
+    await prisma.$transaction(async (tx) => {
+      await createUserTransaction({
+        transaction: {
+          amount: recurringTransaction.amount,
+          date: recurringTransaction.nextOccurrence,
+          title: recurringTransaction.title,
+          description: recurringTransaction.description || undefined,
+          type: recurringTransaction.type,
+        },
+        userId: recurringTransaction.userId,
+        categoryId: recurringTransaction.categoryId,
+        prisma: tx,
+      });
+
+      await updateRecurringTransactionNextOccurrence({
+        id: recurringTransaction.id,
+        nextOccurrence,
+        prisma: tx,
+      });
     });
   }
 };

@@ -1,4 +1,4 @@
-import { PrismaClient, Transaction } from "@prisma/client";
+import { Prisma, PrismaClient, Transaction } from "@prisma/client";
 
 type TransactionInput = Omit<
   Transaction,
@@ -14,7 +14,7 @@ export const createUserTransaction = async ({
   transaction: TransactionInput;
   userId: string;
   categoryId: string;
-  prisma: PrismaClient;
+  prisma: PrismaClient | Prisma.TransactionClient;
 }) => {
   try {
     const createdTransaction = await prisma.transaction.create({

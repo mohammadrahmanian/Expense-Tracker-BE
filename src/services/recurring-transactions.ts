@@ -1,4 +1,4 @@
-import { PrismaClient, RecurringTransaction } from "@prisma/client";
+import { Prisma, PrismaClient, RecurringTransaction } from "@prisma/client";
 import { FastifyBaseLogger } from "fastify";
 import { calculateNextOccurrence } from "../utils/helpers";
 
@@ -256,7 +256,7 @@ export const updateRecurringTransactionNextOccurrence = async ({
 }: {
   id: string;
   nextOccurrence: Date;
-  prisma: PrismaClient;
+  prisma: PrismaClient | Prisma.TransactionClient;
 }) => {
   try {
     const updated = await prisma.recurringTransaction.update({
