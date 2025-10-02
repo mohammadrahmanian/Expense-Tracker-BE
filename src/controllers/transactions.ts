@@ -202,7 +202,11 @@ export const editTransaction = async (
 
   const transactionToBeUpdated = await prisma.transaction.findUnique({
     where: { id },
-    select: { category: { select: { type: true } }, type: true, userId: true },
+    select: {
+      category: { select: { type: true, id: true } },
+      type: true,
+      userId: true,
+    },
   });
 
   if (!transactionToBeUpdated) {
@@ -240,6 +244,24 @@ export const editTransaction = async (
         error: "Bad Request",
         message: "Failed to edit transaction",
       });
+    }
+  } else {
+    // If categoryId is not being changed but type is being changed, validate the new type against the existing category
+    if (allowedFields.type) {
+      try {
+        await validateUserTransactionType({
+          transactionType: allowedFields.type as Transaction["type"],
+          categoryId: transactionToBeUpdated.category.id,
+          userId: user.id,
+          prisma,
+        });
+      } catch (error) {
+        log.error("Validation error:", error);
+        return reply.code(400).send({
+          error: "Bad Request",
+          message: "Failed to edit transaction",
+        });
+      }
     }
   }
 
