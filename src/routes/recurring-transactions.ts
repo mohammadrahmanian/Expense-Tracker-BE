@@ -39,6 +39,21 @@ const deleteRecurringTransactionOptions = {
 
 const editRecurringTransactionOptions = {
   schema: {
+    body: {
+      type: "object",
+      properties: {
+        title: { $ref: "recurringTransactionSchema#/properties/title" },
+        description: {
+          $ref: "recurringTransactionSchema#/properties/description",
+        },
+        amount: { $ref: "recurringTransactionSchema#/properties/amount" },
+        categoryId: {
+          $ref: "recurringTransactionSchema#/properties/categoryId",
+        },
+        type: { $ref: "recurringTransactionSchema#/properties/type" },
+        endDate: { $ref: "recurringTransactionSchema#/properties/endDate" },
+      },
+    },
     response: {
       204: {
         type: "null",
@@ -58,7 +73,7 @@ export const toggleRecurringTransactionOptions = {
       properties: {
         active: { $ref: "recurringTransactionSchema#/properties/isActive" },
       },
-      required: ["active"]
+      required: ["active"],
     },
     response: {
       204: { type: "null" },
