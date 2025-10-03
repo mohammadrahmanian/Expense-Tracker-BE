@@ -28,8 +28,8 @@ export const createUserRecurringTransaction = async ({
   try {
     nextOccurrence = calculateNextOccurrence(
       recurringTransaction.recurrenceFrequency,
-      recurringTransaction.startDate,
-      recurringTransaction.startDate
+      new Date(recurringTransaction.startDate),
+      new Date(recurringTransaction.startDate)
     );
   } catch (error) {
     throw new Error(`Failed to calculate next occurrence: ${error.message}`);
@@ -188,12 +188,14 @@ export const editUserRecurringTransaction = async ({
   log: FastifyBaseLogger;
 }) => {
   try {
-    const { title, description, endDate, categoryId } = updates;
+    const { title, description, endDate, categoryId, amount, type } = updates;
     const allowedFields: Partial<RecurringTransaction> = {
       ...(title ? { title } : {}),
+      ...(amount ? { amount } : {}),
       ...(description ? { description } : {}),
       ...(endDate ? { endDate } : {}),
       ...(categoryId ? { categoryId } : {}),
+      ...(type ? { type } : {}),
     };
 
     const recurringTransaction = await prisma.recurringTransaction.findUnique({
@@ -231,11 +233,38 @@ export const editUserRecurringTransaction = async ({
         throw new Error("Category not found");
       }
 
-      if (recurringTransaction.type !== category.type) {
+      const effectiveType = type || recurringTransaction.type;
+
+      if (effectiveType !== category.type) {
         log.error(
           `User ${userId} attempted to change recurring transaction ${id} to category ${categoryId} with mismatched type`
         );
         throw new Error("Category type does not match transaction type");
+      }
+    } else {
+      // If categoryId is not being changed but type is being changed, validate the new type against the existing category
+      if (type) {
+        const category = await prisma.category.findUnique({
+          where: { id: recurringTransaction.categoryId },
+        });
+        if (!category) {
+          log.error(
+            `User ${userId} has recurring transaction ${id} with non-existent category ${recurringTransaction.categoryId}`
+          );
+          throw new Error("Category not found");
+        }
+        if (category.userId !== userId) {
+          log.error(
+            `User ${userId} attempted to use category ${recurringTransaction.categoryId} they do not own`
+          );
+          throw new Error("Category not found");
+        }
+        if (type !== category.type) {
+          log.error(
+            `User ${userId} attempted to change recurring transaction ${id} to type ${type} which does not match existing category type`
+          );
+          throw new Error("Category type does not match transaction type");
+        }
       }
     }
 
