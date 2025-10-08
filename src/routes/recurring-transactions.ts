@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import {
+  createRecurringTransaction,
   deleteRecurringTransaction,
   editRecurringTransaction,
   getRecurringTransactions,
@@ -21,6 +22,32 @@ const getRecurringTransactionOptions = {
     },
   },
   handler: getRecurringTransactions,
+};
+
+const createRecurringTransactionOptions = {
+  schema: {
+    body: {
+      type: "object",
+      required: ["title", "amount", "startDate", "categoryId", "type"],
+      properties: {
+        title: { $ref: "recurringTransactionSchema#/properties/title" },
+        amount: { $ref: "recurringTransactionSchema#/properties/amount" },
+        startDate: { $ref: "recurringTransactionSchema#/properties/startDate" },
+        endDate: { $ref: "recurringTransactionSchema#/properties/endDate" },
+        description: { $ref: "recurringTransactionSchema#/properties/description" },
+        categoryId: { $ref: "recurringTransactionSchema#/properties/categoryId" },
+        type: { $ref: "recurringTransactionSchema#/properties/type" },
+        recurrenceFrequency: {
+          $ref: "recurringTransactionSchema#/properties/recurrenceFrequency",
+        },
+      },
+    },
+    response: {
+      201: { $ref: "recurringTransactionSchema#" },
+      400: { $ref: "errorSchema#" },
+    },
+  },
+  handler: createRecurringTransaction,
 };
 
 const deleteRecurringTransactionOptions = {
@@ -89,6 +116,10 @@ export const recurringTransactionsRoutes = async (fastify: FastifyInstance) => {
     preHandler: fastify.auth([fastify.verifyToken]),
   });
 
+  fastify.post("/recurring-transactions", {
+    ...createRecurringTransactionOptions,
+    preHandler: fastify.auth([fastify.verifyToken]),
+  });
   fastify.post("/recurring-transactions/:id/toggle", {
     ...toggleRecurringTransactionOptions,
     preHandler: fastify.auth([fastify.verifyToken]),
