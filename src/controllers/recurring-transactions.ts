@@ -58,8 +58,12 @@ export const createRecurringTransaction = async (
 
   try {
     // Ensure startDate is a Date object
-    if (data.startDate && !(data.startDate instanceof Date)) {
-      data.startDate = new Date(data.startDate);
+    if (allowedFields.startDate && !(allowedFields.startDate instanceof Date)) {
+      allowedFields.startDate = new Date(allowedFields.startDate);
+    }
+
+    if (allowedFields.endDate && !(allowedFields.endDate instanceof Date)) {
+      allowedFields.endDate = new Date(allowedFields.endDate);
     }
 
     const newRecurringTransaction = await createUserRecurringTransaction({
@@ -70,7 +74,6 @@ export const createRecurringTransaction = async (
     });
     return reply.code(201).send(newRecurringTransaction);
   } catch (error) {
-    console.log("Error creating recurring transaction:", error);
     server.log.error("Error creating recurring transaction", error);
     return reply.status(400).send({
       error: "Failed to create recurring transaction",
