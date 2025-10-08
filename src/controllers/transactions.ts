@@ -1,4 +1,4 @@
-import { RecurrenceFrequency, Transaction } from "@prisma/client";
+import { RecurrenceFrequency, Transaction, Type } from "@prisma/client";
 
 import { parse } from "csv-parse";
 import { FastifyReply, FastifyRequest, RouteHandlerMethod } from "fastify";
@@ -8,6 +8,7 @@ import { validateRecord } from "../utils/validators";
 import { createUserRecurringTransaction } from "../services/recurring-transactions";
 import {
   createUserTransaction,
+  getUserTransactions,
   validateUserTransactionType,
 } from "../services/transactions";
 
@@ -16,13 +17,64 @@ type RequestParams = {
 };
 
 export const getTransactions: RouteHandlerMethod = async (
-  req: FastifyRequest,
+  req: FastifyRequest<{
+    Querystring: {
+      limit?: number;
+      offset?: number;
+      sort?: string;
+      order?: "asc" | "desc";
+      type?: Type;
+      fromDate?: string;
+      toDate?: string;
+      categoryId?: string;
+      query?: string;
+    };
+  }>,
   reply: FastifyReply
 ) => {
   const { user, server } = req;
+  const {
+    limit = 50,
+    offset = 0,
+    sort = "date",
+    order = "desc",
+    type,
+    categoryId,
+    fromDate,
+    toDate,
+    query,
+  } = req.query;
+
+  const allowedSorts = new Set(["date", "amount"]);
+  const normalizedSort = allowedSorts.has(sort ?? "") ? sort! : "date";
+
+  const parsedFromDate = fromDate ? new Date(fromDate) : undefined;
+  const parsedToDate = toDate ? new Date(toDate) : undefined;
+
+  if (parsedFromDate && isNaN(parsedFromDate.getTime())) {
+    return reply
+      .code(400)
+      .send({ error: "Bad Request", message: "Invalid fromDate format" });
+  }
+  if (parsedToDate && isNaN(parsedToDate.getTime())) {
+    return reply
+      .code(400)
+      .send({ error: "Bad Request", message: "Invalid toDate format" });
+  }
+
   try {
-    const transactions = await server.prisma.transaction.findMany({
-      where: { userId: user.id },
+    const transactions = await getUserTransactions({
+      userId: user.id,
+      prisma: server.prisma,
+      limit: Number(limit),
+      offset: Number(offset),
+      sort: normalizedSort as "date" | "amount",
+      order,
+      type,
+      fromDate: parsedFromDate,
+      toDate: parsedToDate,
+      categoryId,
+      query,
     });
     return reply.send(transactions);
   } catch (error) {
