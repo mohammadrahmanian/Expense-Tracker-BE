@@ -1,9 +1,65 @@
-import { Prisma, PrismaClient, Transaction } from "@prisma/client";
+import { Prisma, PrismaClient, Transaction, Type } from "@prisma/client";
 
 type TransactionInput = Omit<
   Transaction,
   "id" | "createdAt" | "updatedAt" | "userId" | "categoryId"
 >;
+
+type SortKey = keyof Pick<Transaction, "date" | "amount">;
+
+export const getUserTransactions = async ({
+  userId,
+  prisma,
+  limit,
+  offset,
+  sort,
+  order,
+  type,
+  fromDate,
+  toDate,
+  categoryId,
+  query,
+}: {
+  userId: string;
+  prisma: PrismaClient;
+  limit?: number;
+  offset?: number;
+  sort?: SortKey;
+  order?: "asc" | "desc";
+  type?: Type;
+  fromDate?: Date;
+  toDate?: Date;
+  categoryId?: string;
+  query?: string;
+}) => {
+  try {
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        userId,
+        ...(type ? { type } : {}),
+        ...(fromDate ? { date: { gte: fromDate } } : {}),
+        ...(toDate ? { date: { lte: toDate } } : {}),
+        ...(categoryId ? { categoryId } : {}),
+        ...(query
+          ? {
+              OR: [
+                { title: { contains: query, mode: "insensitive" } },
+                { description: { contains: query, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      take: limit,
+      skip: offset,
+      orderBy: {
+        [sort]: order,
+      },
+    });
+    return transactions;
+  } catch (error) {
+    throw new Error(`Failed to get user transactions: ${error.message}`);
+  }
+};
 
 export const createUserTransaction = async ({
   transaction,

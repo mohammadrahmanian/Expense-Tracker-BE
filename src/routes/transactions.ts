@@ -16,6 +16,23 @@ type TransactionParams = {
 
 const getTransactionsOpts = {
   schema: {
+    params: {
+      type: "object",
+      properties: {
+        limit: { type: "number", minimum: 1, default: 50 },
+        offset: { type: "number", minimum: 0, default: 0 },
+        sort: {
+          type: "string",
+          enum: ["date", "amount"],
+        },
+        order: { type: "string", enum: ["asc", "desc"] },
+        type: { type: "string", enum: ["INCOME", "EXPENSE"] },
+        fromDate: { type: "string", format: "date-time" },
+        toDate: { type: "string", format: "date-time" },
+        categoryId: { type: "string" },
+        query: { type: "string" },
+      },
+    },
     response: {
       200: {
         type: "array",
@@ -49,7 +66,9 @@ const createTransactionOpts = {
         categoryId: { $ref: "transactionSchema#/properties/categoryId" },
         type: { $ref: "transactionSchema#/properties/type" },
         isRecurring: { $ref: "transactionSchema#/properties/isRecurring" },
-        recurrenceFrequency: { $ref: "transactionSchema#/properties/recurrenceFrequency" },
+        recurrenceFrequency: {
+          $ref: "transactionSchema#/properties/recurrenceFrequency",
+        },
       },
     },
     response: {
