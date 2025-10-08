@@ -16,7 +16,7 @@ type TransactionParams = {
 
 const getTransactionsOpts = {
   schema: {
-    params: {
+    querystring: {
       type: "object",
       properties: {
         limit: { type: "number", minimum: 1, default: 50 },

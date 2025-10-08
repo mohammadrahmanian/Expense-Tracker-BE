@@ -22,7 +22,7 @@ export const getTransactions: RouteHandlerMethod = async (
       limit?: number;
       offset?: number;
       sort?: string;
-      order: "asc" | "desc";
+      order?: "asc" | "desc";
       type?: Type;
       fromDate?: string;
       toDate?: string;
@@ -45,13 +45,16 @@ export const getTransactions: RouteHandlerMethod = async (
     query,
   } = req.query;
 
+  const allowedSorts = new Set(["date", "amount"]);
+  const normalizedSort = allowedSorts.has(sort ?? "") ? sort! : "date";
+
   try {
     const transactions = await getUserTransactions({
       userId: user.id,
       prisma: server.prisma,
       limit: Number(limit),
       offset: Number(offset),
-      sort: sort as "date" | "amount",
+      sort: normalizedSort as "date" | "amount",
       order,
       type,
       fromDate: fromDate ? new Date(fromDate) : undefined,

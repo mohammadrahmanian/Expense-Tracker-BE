@@ -24,7 +24,7 @@ export const getUserTransactions = async ({
   prisma: PrismaClient;
   limit?: number;
   offset?: number;
-  sort?: SortKey;
+  sort: SortKey;
   order?: "asc" | "desc";
   type?: Type;
   fromDate?: Date;
@@ -37,8 +37,14 @@ export const getUserTransactions = async ({
       where: {
         userId,
         ...(type ? { type } : {}),
-        ...(fromDate ? { date: { gte: fromDate } } : {}),
-        ...(toDate ? { date: { lte: toDate } } : {}),
+        ...(fromDate || toDate
+          ? {
+              date: {
+                ...(fromDate ? { gte: fromDate } : {}),
+                ...(toDate ? { lte: toDate } : {}),
+              },
+            }
+          : {}),
         ...(categoryId ? { categoryId } : {}),
         ...(query
           ? {
@@ -51,9 +57,13 @@ export const getUserTransactions = async ({
       },
       take: limit,
       skip: offset,
-      orderBy: {
-        [sort]: order,
-      },
+      orderBy: sort
+        ? {
+            [sort]: order ?? "desc",
+          }
+        : {
+            date: order ?? "desc",
+          },
     });
     return transactions;
   } catch (error) {
