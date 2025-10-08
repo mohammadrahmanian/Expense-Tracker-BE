@@ -48,6 +48,20 @@ export const getTransactions: RouteHandlerMethod = async (
   const allowedSorts = new Set(["date", "amount"]);
   const normalizedSort = allowedSorts.has(sort ?? "") ? sort! : "date";
 
+  const parsedFromDate = fromDate ? new Date(fromDate) : undefined;
+  const parsedToDate = toDate ? new Date(toDate) : undefined;
+
+  if (parsedFromDate && isNaN(parsedFromDate.getTime())) {
+    return reply
+      .code(400)
+      .send({ error: "Bad Request", message: "Invalid fromDate format" });
+  }
+  if (parsedToDate && isNaN(parsedToDate.getTime())) {
+    return reply
+      .code(400)
+      .send({ error: "Bad Request", message: "Invalid toDate format" });
+  }
+
   try {
     const transactions = await getUserTransactions({
       userId: user.id,
@@ -57,8 +71,8 @@ export const getTransactions: RouteHandlerMethod = async (
       sort: normalizedSort as "date" | "amount",
       order,
       type,
-      fromDate: fromDate ? new Date(fromDate) : undefined,
-      toDate: toDate ? new Date(toDate) : undefined,
+      fromDate: parsedFromDate,
+      toDate: parsedToDate,
       categoryId,
       query,
     });
