@@ -2,6 +2,7 @@ import { RecurringTransaction } from "@prisma/client";
 import { FastifyReply, FastifyRequest } from "fastify";
 import {
   activateRecurringTransaction,
+  createUserRecurringTransaction,
   deactivateRecurringTransaction,
   deleteUserRecurringTransaction,
   editUserRecurringTransaction,
@@ -24,6 +25,55 @@ export const getRecurringTransactions = async (
     server.log.error("Error fetching recurring transactions", error);
     return reply.status(400).send({
       error: "Failed to fetch recurring transactions",
+    });
+  }
+};
+
+export const createRecurringTransaction = async (
+  req: FastifyRequest<{ Body: RecurringTransaction }>,
+  reply: FastifyReply
+) => {
+  const { server, user } = req;
+  const data = req.body;
+
+  const {
+    title,
+    amount,
+    type,
+    description,
+    categoryId,
+    recurrenceFrequency,
+    startDate,
+    endDate,
+  } = req.body;
+  const allowedFields = {
+    title,
+    amount,
+    type,
+    description,
+    recurrenceFrequency,
+    startDate,
+    endDate,
+  };
+
+  try {
+    // Ensure startDate is a Date object
+    if (data.startDate && !(data.startDate instanceof Date)) {
+      data.startDate = new Date(data.startDate);
+    }
+
+    const newRecurringTransaction = await createUserRecurringTransaction({
+      recurringTransaction: allowedFields,
+      categoryId,
+      userId: user.id,
+      prisma: server.prisma,
+    });
+    return reply.code(201).send(newRecurringTransaction);
+  } catch (error) {
+    console.log("Error creating recurring transaction:", error);
+    server.log.error("Error creating recurring transaction", error);
+    return reply.status(400).send({
+      error: "Failed to create recurring transaction",
     });
   }
 };

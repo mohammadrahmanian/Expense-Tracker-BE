@@ -5,7 +5,6 @@ export const recurringTransactionSchema = {
     id: { type: "string" },
     title: { type: "string" },
     amount: { type: "number" },
-    date: { type: "string", format: "date-time" },
     startDate: { type: "string", format: "date-time" },
     endDate: { type: "string", format: "date-time" },
     isActive: { type: "boolean" },
