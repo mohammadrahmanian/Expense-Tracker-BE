@@ -33,39 +33,64 @@ export const getUserTransactions = async ({
   query?: string;
 }) => {
   try {
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        userId,
-        ...(type ? { type } : {}),
-        ...(fromDate || toDate
+    const transactions = prisma.$transaction(async (tx) => {
+      const items = await tx.transaction.findMany({
+        where: {
+          userId,
+          ...(type ? { type } : {}),
+          ...(fromDate || toDate
+            ? {
+                date: {
+                  ...(fromDate ? { gte: fromDate } : {}),
+                  ...(toDate ? { lte: toDate } : {}),
+                },
+              }
+            : {}),
+          ...(categoryId ? { categoryId } : {}),
+          ...(query
+            ? {
+                OR: [
+                  { title: { contains: query, mode: "insensitive" } },
+                  { description: { contains: query, mode: "insensitive" } },
+                ],
+              }
+            : {}),
+        },
+        take: limit,
+        skip: offset,
+        orderBy: sort
           ? {
-              date: {
-                ...(fromDate ? { gte: fromDate } : {}),
-                ...(toDate ? { lte: toDate } : {}),
-              },
+              [sort]: order ?? "desc",
             }
-          : {}),
-        ...(categoryId ? { categoryId } : {}),
-        ...(query
-          ? {
-              OR: [
-                { title: { contains: query, mode: "insensitive" } },
-                { description: { contains: query, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-      },
-      take: limit,
-      skip: offset,
-      orderBy: sort
-        ? {
-            [sort]: order ?? "desc",
-          }
-        : {
-            date: order ?? "desc",
-          },
+          : {
+              date: order ?? "desc",
+            },
+      });
+      const total = await tx.transaction.count({
+        where: {
+          userId,
+          ...(type ? { type } : {}),
+          ...(fromDate || toDate
+            ? {
+                date: {
+                  ...(fromDate ? { gte: fromDate } : {}),
+                  ...(toDate ? { lte: toDate } : {}),
+                },
+              }
+            : {}),
+          ...(categoryId ? { categoryId } : {}),
+          ...(query
+            ? {
+                OR: [
+                  { title: { contains: query, mode: "insensitive" } },
+                  { description: { contains: query, mode: "insensitive" } },
+                ],
+              }
+            : {}),
+        },
+      });
+      return { items, total, count: items.length };
     });
-    return transactions;
   } catch (error) {
     throw new Error(`Failed to get user transactions: ${error.message}`);
   }
