@@ -35,8 +35,12 @@ const getTransactionsOpts = {
     },
     response: {
       200: {
-        type: "array",
-        items: { $ref: "transactionSchema#" },
+        type: "object",
+        properties: {
+          total: { type: "number" },
+          count: { type: "number" },
+          items: { type: "array", items: { $ref: "transactionSchema#" } },
+        },
       },
     },
   },

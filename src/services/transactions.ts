@@ -33,7 +33,7 @@ export const getUserTransactions = async ({
   query?: string;
 }) => {
   try {
-    const transactions = prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx) => {
       const items = await tx.transaction.findMany({
         where: {
           userId,
@@ -91,6 +91,7 @@ export const getUserTransactions = async ({
       });
       return { items, total, count: items.length };
     });
+
   } catch (error) {
     throw new Error(`Failed to get user transactions: ${error.message}`);
   }
