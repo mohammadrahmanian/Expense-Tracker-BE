@@ -33,8 +33,8 @@ export const getUserTransactions = async ({
   query?: string;
 }) => {
   try {
-    const transactions = await prisma.transaction.findMany({
-      where: {
+    return prisma.$transaction(async (tx) => {
+      const whereClause: Prisma.TransactionWhereInput = {
         userId,
         ...(type ? { type } : {}),
         ...(fromDate || toDate
@@ -54,18 +54,30 @@ export const getUserTransactions = async ({
               ],
             }
           : {}),
-      },
-      take: limit,
-      skip: offset,
-      orderBy: sort
-        ? {
-            [sort]: order ?? "desc",
-          }
-        : {
-            date: order ?? "desc",
-          },
+      };
+
+      const items = await tx.transaction.findMany({
+        where: whereClause,
+        take: limit,
+        skip: offset,
+        orderBy: sort
+          ? {
+              [sort]: order ?? "desc",
+            }
+          : {
+              date: order ?? "desc",
+            },
+      });
+      const total = await tx.transaction.count({
+        where: whereClause,
+      });
+
+      return {
+        items, // transactions in current page
+        total, // total matching transactions across all pages
+        count: items.length, // number of items in current page
+      };
     });
-    return transactions;
   } catch (error) {
     throw new Error(`Failed to get user transactions: ${error.message}`);
   }
