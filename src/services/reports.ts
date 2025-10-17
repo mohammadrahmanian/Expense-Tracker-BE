@@ -55,6 +55,13 @@ export const getUserDashboardReports = async (
     transactions.forEach((tx) => {
       const { categoryId, category } = tx;
 
+      if (!category) {
+        logger.warn(
+          `Transaction has null or invalid category reference, skipping: ${categoryId}`
+        );
+        return;
+      }
+
       const targetArray =
         tx.type === "INCOME"
           ? categoryBreakdown.income
@@ -112,7 +119,6 @@ export const getUserDashboardReports = async (
       monthlyEntry.savings = monthlyEntry.income - monthlyEntry.expenses;
     });
     monthlyData.sort((a, b) => (a.month < b.month ? -1 : 1));
-
 
     return {
       summary: {
