@@ -93,12 +93,27 @@ export const getDashboardReports = async (
 
     const { startDate, endDate } = req.query;
 
-    if (!startDate || isNaN(Date.parse(startDate))) {
+    if (!startDate || !endDate) {
+      return reply
+        .status(400)
+        .send({ error: "startDate and endDate are required" });
+    }
+
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+
+    if (isNaN(startDateObj.getTime())) {
       return reply.status(400).send({ error: "Invalid startDate format" });
     }
 
-    if (!endDate || isNaN(Date.parse(endDate))) {
+    if (isNaN(endDateObj.getTime())) {
       return reply.status(400).send({ error: "Invalid endDate format" });
+    }
+
+    if (startDateObj > endDateObj) {
+      return reply
+        .status(400)
+        .send({ error: "startDate cannot be after endDate" });
     }
 
     const reports = await getUserDashboardReports(

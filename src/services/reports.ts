@@ -22,6 +22,7 @@ export const getUserDashboardReports = async (
         categoryId: true,
         type: true,
         amount: true,
+        date: true,
       },
     });
 
@@ -75,12 +76,51 @@ export const getUserDashboardReports = async (
       }
     });
 
+    const monthlyData: {
+      month: string;
+      monthLabel: string;
+      income: number;
+      expenses: number;
+      savings: number;
+    }[] = [];
+
+    transactions.forEach((tx) => {
+      const month = tx.date.toISOString().slice(0, 7);
+      const monthLabel = tx.date.toLocaleString("default", {
+        month: "short",
+        year: "numeric",
+      });
+
+      let monthlyEntry = monthlyData.find((entry) => entry.month === month);
+      if (!monthlyEntry) {
+        monthlyEntry = {
+          month,
+          monthLabel,
+          income: 0,
+          expenses: 0,
+          savings: 0,
+        };
+        monthlyData.push(monthlyEntry);
+      }
+
+      if (tx.type === "INCOME") {
+        monthlyEntry.income += tx.amount.toNumber();
+      } else {
+        monthlyEntry.expenses += tx.amount.toNumber();
+      }
+
+      monthlyEntry.savings = monthlyEntry.income - monthlyEntry.expenses;
+    });
+    monthlyData.sort((a, b) => (a.month < b.month ? -1 : 1));
+
+
     return {
       summary: {
         totalIncome: totalIncome,
         totalExpenses: totalExpenses,
         netSavings: totalIncome - totalExpenses,
       },
+      monthlyData,
       categoryBreakdown: categoryBreakdown,
     };
   } catch (e) {

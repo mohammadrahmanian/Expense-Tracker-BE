@@ -53,6 +53,7 @@ const getDashboardReportsOpts = {
         startDate: { type: "string", format: "date" },
         endDate: { type: "string", format: "date" },
       },
+      required: ["startDate", "endDate"],
     },
     response: {
       200: {
