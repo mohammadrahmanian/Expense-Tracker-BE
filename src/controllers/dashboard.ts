@@ -1,4 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
+import { getUserDashboardReports } from "../services/reports";
 
 export const getDashboardStats = async (
   req: FastifyRequest,
@@ -77,6 +78,42 @@ export const getDashboardStats = async (
     });
   } catch (error) {
     req.log.error("Error fetching dashboard stats:", error);
+    return reply.status(500).send({ error: "Internal Server Error" });
+  }
+};
+
+export const getDashboardReports = async (
+  req: FastifyRequest<{
+    Querystring: { startDate?: string; endDate?: string };
+  }>,
+  reply: FastifyReply
+) => {
+  try {
+    const { user, server } = req;
+
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || isNaN(Date.parse(startDate))) {
+      return reply.status(400).send({ error: "Invalid startDate format" });
+    }
+
+    if (!endDate || isNaN(Date.parse(endDate))) {
+      return reply.status(400).send({ error: "Invalid endDate format" });
+    }
+
+    const reports = await getUserDashboardReports(
+      server.prisma,
+      server.log,
+      user.id,
+      {
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+      }
+    );
+
+    return reply.send(reports);
+  } catch (e) {
+    req.log.error("Error fetching dashboard reports:", e);
     return reply.status(500).send({ error: "Internal Server Error" });
   }
 };
