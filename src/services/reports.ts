@@ -93,7 +93,7 @@ export const getUserDashboardReports = async (
 
     transactions.forEach((tx) => {
       const month = tx.date.toISOString().slice(0, 7);
-      const monthLabel = tx.date.toLocaleString("default", {
+      const monthLabel = tx.date.toLocaleString("en-US", {
         month: "short",
         year: "numeric",
       });
