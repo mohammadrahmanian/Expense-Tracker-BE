@@ -100,8 +100,9 @@ export const getDashboardReports = async (
     }
 
     const startDateObj = new Date(startDate);
+    startDateObj.setUTCHours(0, 0, 0, 0);
     const endDateObj = new Date(endDate);
-    endDateObj.setHours(23, 59, 59, 999);
+    endDateObj.setUTCHours(23, 59, 59, 999);
 
     if (isNaN(startDateObj.getTime())) {
       return reply.status(400).send({ error: "Invalid startDate format" });

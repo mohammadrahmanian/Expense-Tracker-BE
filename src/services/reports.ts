@@ -77,7 +77,7 @@ export const getUserDashboardReports = async (
         targetArray.push({
           categoryId,
           categoryName: category.name,
-          color: category.color,
+          color: category.color ?? "#808080",
           amount: tx.amount.toNumber(),
         });
       }
