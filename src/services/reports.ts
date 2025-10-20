@@ -92,11 +92,15 @@ export const getUserDashboardReports = async (
     }[] = [];
 
     transactions.forEach((tx) => {
-      const month = tx.date.toISOString().slice(0, 7);
-      const monthLabel = tx.date.toLocaleString("en-US", {
+      const year = tx.date.getUTCFullYear();
+      const monthNum = tx.date.getUTCMonth() + 1;
+      const month = `${year}-${String(monthNum).padStart(2, "0")}`;
+      const monthLabel = new Date(Date.UTC(year, monthNum - 1, 1)).toLocaleString("en-US", {
         month: "short",
         year: "numeric",
+        timeZone: "UTC",
       });
+
 
       let monthlyEntry = monthlyData.find((entry) => entry.month === month);
       if (!monthlyEntry) {
@@ -118,7 +122,7 @@ export const getUserDashboardReports = async (
 
       monthlyEntry.savings = monthlyEntry.income - monthlyEntry.expenses;
     });
-    monthlyData.sort((a, b) => (a.month < b.month ? -1 : 1));
+    monthlyData.sort((a, b) => a.month.localeCompare(b.month));
 
     return {
       summary: {
