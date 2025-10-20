@@ -64,6 +64,7 @@ model Transaction {
   @@index([categoryId])
   @@index([date])
   @@index([type])
+  @@index([userId, date])
 }
 
 model RecurringTransaction {
