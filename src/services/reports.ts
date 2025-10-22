@@ -127,19 +127,20 @@ export const getUserDashboardReports = async (
         monthlyData.push(monthlyEntry);
       }
 
-      
+      const amt = tx.amount.toNumber();
+      const catKey = tx.categoryId ?? "uncategorized";
       if (tx.type === "INCOME") {
-        monthlyEntry.income.total += tx.amount.toNumber();
-        monthlyEntry.income.categories[tx.categoryId] =
-          (monthlyEntry.income.categories[tx.categoryId] || 0) + tx.amount.toNumber();
-
+        monthlyEntry.income.total += amt;
+        monthlyEntry.income.categories[catKey] =
+          (monthlyEntry.income.categories[catKey] || 0) + amt;
       } else {
-        monthlyEntry.expenses.total += tx.amount.toNumber();
-        monthlyEntry.expenses.categories[tx.categoryId] =
-          (monthlyEntry.expenses.categories[tx.categoryId] || 0) + tx.amount.toNumber();
+        monthlyEntry.expenses.total += amt;
+        monthlyEntry.expenses.categories[catKey] =
+          (monthlyEntry.expenses.categories[catKey] || 0) + amt;
       }
 
-      monthlyEntry.savings = monthlyEntry.income.total - monthlyEntry.expenses.total;
+      monthlyEntry.savings =
+        monthlyEntry.income.total - monthlyEntry.expenses.total;
     });
     monthlyData.sort((a, b) => a.month.localeCompare(b.month));
 
