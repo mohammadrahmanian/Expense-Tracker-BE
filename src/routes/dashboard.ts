@@ -75,8 +75,26 @@ const getDashboardReportsOpts = {
               properties: {
                 month: { type: "string", example: "2024-08" },
                 monthLabel: { type: "string", example: "Aug 2024" },
-                income: { type: "number", example: 8500 },
-                expenses: { type: "number", example: 6200 },
+                income: {
+                  type: "object",
+                  properties: {
+                    total: { type: "number", example: 11200 },
+                    categories: {
+                      type: "object",
+                      additionalProperties: { type: "number" },
+                    },
+                  },
+                },
+                expenses: {
+                  type: "object",
+                  properties: {
+                    total: { type: "number", example: 6200 },
+                    categories: {
+                      type: "object",
+                      additionalProperties: { type: "number" },
+                    },
+                  },
+                },
                 savings: { type: "number", example: 2300 },
               },
             },

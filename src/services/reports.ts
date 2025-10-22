@@ -86,8 +86,14 @@ export const getUserDashboardReports = async (
     const monthlyData: {
       month: string;
       monthLabel: string;
-      income: number;
-      expenses: number;
+      income: {
+        total: number;
+        categories: { [categoryId: string]: number };
+      };
+      expenses: {
+        total: number;
+        categories: { [categoryId: string]: number };
+      };
       savings: number;
     }[] = [];
 
@@ -95,32 +101,45 @@ export const getUserDashboardReports = async (
       const year = tx.date.getUTCFullYear();
       const monthNum = tx.date.getUTCMonth() + 1;
       const month = `${year}-${String(monthNum).padStart(2, "0")}`;
-      const monthLabel = new Date(Date.UTC(year, monthNum - 1, 1)).toLocaleString("en-US", {
+      const monthLabel = new Date(
+        Date.UTC(year, monthNum - 1, 1)
+      ).toLocaleString("en-US", {
         month: "short",
         year: "numeric",
         timeZone: "UTC",
       });
-
 
       let monthlyEntry = monthlyData.find((entry) => entry.month === month);
       if (!monthlyEntry) {
         monthlyEntry = {
           month,
           monthLabel,
-          income: 0,
-          expenses: 0,
+          income: {
+            total: 0,
+            categories: {},
+          },
+          expenses: {
+            total: 0,
+            categories: {},
+          },
           savings: 0,
         };
         monthlyData.push(monthlyEntry);
       }
 
+      
       if (tx.type === "INCOME") {
-        monthlyEntry.income += tx.amount.toNumber();
+        monthlyEntry.income.total += tx.amount.toNumber();
+        monthlyEntry.income.categories[tx.categoryId] =
+          (monthlyEntry.income.categories[tx.categoryId] || 0) + tx.amount.toNumber();
+
       } else {
-        monthlyEntry.expenses += tx.amount.toNumber();
+        monthlyEntry.expenses.total += tx.amount.toNumber();
+        monthlyEntry.expenses.categories[tx.categoryId] =
+          (monthlyEntry.expenses.categories[tx.categoryId] || 0) + tx.amount.toNumber();
       }
 
-      monthlyEntry.savings = monthlyEntry.income - monthlyEntry.expenses;
+      monthlyEntry.savings = monthlyEntry.income.total - monthlyEntry.expenses.total;
     });
     monthlyData.sort((a, b) => a.month.localeCompare(b.month));
 
