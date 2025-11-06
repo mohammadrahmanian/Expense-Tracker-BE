@@ -9,7 +9,7 @@ type CsvRecord = {
   title: string;
 };
 
-type ValidatedRecord = CsvRecord & {
+export type ValidatedRecord = CsvRecord & {
   type: Type;
 };
 
