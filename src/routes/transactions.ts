@@ -7,7 +7,7 @@ import {
   editTransaction,
   getTransaction,
   getTransactions,
-  uploadTransactions,
+  importTransactionFile,
 } from "../controllers/transactions";
 
 type TransactionParams = {
@@ -124,7 +124,7 @@ const editTransactionOpts = {
   handler: editTransaction,
 };
 
-const uploadTransactionsOpts = {
+const importTransactionOpts = {
   schema: {
     response: {
       200: {
@@ -138,7 +138,7 @@ const uploadTransactionsOpts = {
       400: { $ref: "errorSchema#" },
     },
   },
-  handler: uploadTransactions,
+  handler: importTransactionFile,
 };
 
 export const transactionsRoutes = (fastify: FastifyInstance, options, done) => {
@@ -171,7 +171,7 @@ export const transactionsRoutes = (fastify: FastifyInstance, options, done) => {
   });
 
   fastify.post("/transactions/upload", {
-    ...uploadTransactionsOpts,
+    ...importTransactionOpts,
     preHandler: fastify.auth([fastify.verifyToken]),
   });
 

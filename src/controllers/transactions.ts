@@ -1,10 +1,8 @@
 import { RecurrenceFrequency, Transaction, Type } from "@prisma/client";
 
-import { parse } from "csv-parse";
 import { FastifyReply, FastifyRequest, RouteHandlerMethod } from "fastify";
 
-import { validateRecord } from "../utils/validators";
-
+import { importCsvRecords } from "../services/data-exchange";
 import { createUserRecurringTransaction } from "../services/recurring-transactions";
 import {
   createUserTransaction,
@@ -336,7 +334,7 @@ export const editTransaction = async (
   }
 };
 
-export const uploadTransactions = async (
+export const importTransactionFile = async (
   request: FastifyRequest,
   reply: FastifyReply
 ) => {
@@ -358,64 +356,23 @@ export const uploadTransactions = async (
     });
   }
 
-  const parser = parse({
-    delimiter: ",",
-    columns: ["type", "date", "amount", "category", "title"],
-  });
+  try {
+    const { successfulRecords, failedRecords } = await importCsvRecords({
+      data,
+      userId: user.id,
+      prisma: server.prisma,
+      log: server.log,
+    });
 
-  data.file.pipe(parser);
-
-  let failedRecords = 0;
-  let successfulRecords = 0;
-  for await (const record of parser) {
-    try {
-      const validatedRecord = validateRecord(record);
-      const findOrCreateCategory = async () => {
-        const category = await server.prisma.category.upsert({
-          where: {
-            name_userId: {
-              name: validatedRecord.category,
-              userId: user.id,
-            },
-          },
-          update: {},
-          create: {
-            name: validatedRecord.category,
-            type: validatedRecord.type,
-            userId: user.id,
-          },
-        });
-        return category;
-      };
-      const category = await findOrCreateCategory();
-      if (validatedRecord.type !== category.type) {
-        throw new Error(
-          `Transaction type (${validatedRecord.type}) must match category type (${category.type})`
-        );
-      }
-      const transaction = await server.prisma.transaction.create({
-        data: {
-          ...validatedRecord,
-          type: validatedRecord.type,
-          user: {
-            connect: { id: user.id },
-          },
-          category: {
-            connect: { id: category.id },
-          },
-        },
-      });
-      server.log.info(`Transaction created: ${transaction.id}`);
-      successfulRecords++;
-    } catch (error) {
-      server.log.error(`Validation error: ${error.message}`);
-      failedRecords++;
-    }
+    return reply.send({
+      message: "File processed successfully",
+      successfulRecords,
+      failedRecords,
+    });
+  } catch (error) {
+    server.log.error("Error importing transactions:", error);
+    return reply.code(500).send({
+      error: "Internal Server Error",
+    });
   }
-
-  return reply.send({
-    message: "File processed successfully",
-    successfulRecords,
-    failedRecords,
-  });
 };
