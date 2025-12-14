@@ -1,8 +1,11 @@
+import "./src/instrument";
+
 import FastifyAuth from "@fastify/auth";
 import FastifyCors from "@fastify/cors";
 import FastifyMultipart from "@fastify/multipart";
 import FastifySwagger from "@fastify/swagger";
 import FastifySwaggerUi from "@fastify/swagger-ui";
+import * as Sentry from "@sentry/node";
 import Fastify from "fastify";
 import FastifyCron from "fastify-cron";
 
@@ -30,6 +33,8 @@ const API_PREFIX = "/api";
 const fastify = Fastify({
   logger: true,
 });
+
+Sentry.setupFastifyErrorHandler(fastify);
 
 fastify.register(FastifySwagger, {
   openapi: {
