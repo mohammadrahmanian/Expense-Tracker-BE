@@ -37,7 +37,7 @@ A robust RESTful API backend for tracking personal finances, built with Fastify,
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/mohammadrahmanian/Expense-tracker-be.git
+git clone https://github.com/mohammadrahmanian/Expense-Tracker-be.git
 ```
 
 ### 2. Install Dependencies
