@@ -1,6 +1,7 @@
 import "./src/instrument";
 
 import FastifyAuth from "@fastify/auth";
+import FastifyCookie from "@fastify/cookie";
 import FastifyCors from "@fastify/cors";
 import FastifyMultipart from "@fastify/multipart";
 import FastifySwagger from "@fastify/swagger";
@@ -34,6 +35,8 @@ const fastify = Fastify({
   logger: true,
 });
 
+fastify.register(FastifyCookie);
+
 Sentry.setupFastifyErrorHandler(fastify);
 
 fastify.register(FastifySwagger, {
@@ -47,9 +50,9 @@ fastify.register(FastifySwagger, {
 });
 
 fastify.register(FastifyCors, {
-  // TODO: Configure CORS properly for production
-  origin: "*",
+  origin: process.env.CORS_ORIGIN,
   methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
 });
 
 fastify.register(FastifyMultipart, {
