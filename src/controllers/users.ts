@@ -1,27 +1,25 @@
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 
-import { Category } from "@prisma/client";
+import { CookieSerializeOptions } from "@fastify/cookie";
+import { User } from "@prisma/client";
+import { captureException } from "@sentry/node";
 import { FastifyReply, FastifyRequest } from "fastify";
+import { getTokenFromRequest } from "../plugins/auth";
+import { createDefaultCategories } from "../services/categories";
+import {
+  createJWTToken,
+  createNewUser,
+  getUserByEmail,
+  getUserById,
+} from "../services/users";
 
-const saltRounds = 10;
-
-const categoriesToCreateForNewUser: Pick<
-  Category,
-  "name" | "type" | "color"
->[] = [
-  { name: "Food", type: "EXPENSE", color: "#FF6347" },
-  { name: "Transportation", type: "EXPENSE", color: "#4682B4" },
-  { name: "Utilities", type: "EXPENSE", color: "#32CD32" },
-  { name: "Entertainment", type: "EXPENSE", color: "#FFD700" },
-  { name: "Health", type: "EXPENSE", color: "#FF4500" },
-  { name: "Household", type: "EXPENSE", color: "#8B4513" },
-  { name: "Other Expenses", type: "EXPENSE", color: "#A9A9A9" },
-  { name: "Salary", type: "INCOME", color: "#8A2BE2" },
-  { name: "Bonus", type: "INCOME", color: "#00CED1" },
-  { name: "Refund", type: "INCOME", color: "#FF69B4" },
-  { name: "Other Income", type: "INCOME", color: "#20B2AA" },
-];
+const TOKEN_COOKIE_NAME = "token";
+const TOKEN_COOKIE_SETTINGS: CookieSerializeOptions = {
+  httpOnly: true,
+  sameSite: "lax",
+  maxAge: 7 * 24 * 60 * 60, // 7 days
+  path: "/",
+};
 
 export const createUser = async (
   req: FastifyRequest<{ Body: { email: string; password: string } }>,
@@ -29,10 +27,20 @@ export const createUser = async (
 ) => {
   const { server } = req;
   const { email, password } = req.body;
-  // TODO: Validate and sanitize input
-  const user = await server.prisma.user.findUnique({
-    where: { email },
-  });
+  let user: User | null;
+  let newUser: User;
+  let token: string;
+
+  try {
+    user = await getUserByEmail(server.prisma, email);
+  } catch (error) {
+    captureException(error);
+    return reply.code(500).send({
+      error: "Internal Server Error",
+      message: "An error occurred while creating the user.",
+      statusCode: 500,
+    });
+  }
 
   if (user) {
     return reply.status(400).send({
@@ -41,57 +49,46 @@ export const createUser = async (
       statusCode: 400,
     });
   }
+
   try {
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    const newUser = await server.prisma.user
-      .create({
-        data: { email, password: hashedPassword },
-      })
-      .catch((error) => {
-        req.log.error("Error creating user:", error);
-        throw new Error("Failed to create user");
-      });
-
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new Error("JWT secret environment variable is not set");
-    }
-
-    const token = jwt.sign(
-      {
-        userId: newUser.id,
-      },
-      jwtSecret,
-      { expiresIn: "7d" }
-    );
-
-    await server.prisma.category
-      .createMany({
-        data: categoriesToCreateForNewUser.map((category) => ({
-          ...category,
-          userId: newUser.id,
-        })),
-      })
-      .catch((error) => {
-        req.log.error("Error creating default categories:", error);
-        // Not throwing an error here to allow user creation even if category creation fails
-      });
-
-    return reply.status(201).send({
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-      },
-      token,
-    });
+    newUser = await createNewUser(server.prisma, email, password);
   } catch (error) {
-    return reply.status(500).send({
+    req.log.error("Error creating user:", error);
+    captureException(error);
+    return reply.code(500).send({
       error: "Internal Server Error",
       message: "An error occurred while creating the user.",
       statusCode: 500,
     });
   }
+
+  try {
+    token = createJWTToken(newUser.id);
+  } catch (error) {
+    req.log.error("Error creating JWT token:", error);
+    captureException(error);
+    return reply.code(500).send({
+      error: "Internal Server Error",
+      message: "An error occurred while creating the user.",
+      statusCode: 500,
+    });
+  }
+
+  try {
+    createDefaultCategories(server.prisma, newUser.id);
+  } catch {
+    captureException("Error creating default categories for new user");
+    // Not critical, so we don't block user creation
+  }
+
+  reply.setCookie(TOKEN_COOKIE_NAME, token, TOKEN_COOKIE_SETTINGS);
+
+  return reply.status(201).send({
+    user: {
+      id: newUser.id,
+      email: newUser.email,
+    },
+  });
 };
 
 export const loginUser = async (
@@ -100,8 +97,19 @@ export const loginUser = async (
 ) => {
   const { server } = req;
   const { email, password } = req.body;
-  // TODO: Validate and sanitize input
-  const user = await server.prisma.user.findUnique({ where: { email } });
+  let user: User | null;
+  let token: string;
+  try {
+    user = await getUserByEmail(server.prisma, email);
+  } catch (error) {
+    captureException(error);
+    return reply.code(500).send({
+      error: "Internal Server Error",
+      message: "An error occurred while logging in.",
+      statusCode: 500,
+    });
+  }
+
   if (!user) {
     return reply.code(401).send({
       error: "Unauthorized",
@@ -109,6 +117,7 @@ export const loginUser = async (
       statusCode: 401,
     });
   }
+
   try {
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
@@ -119,6 +128,7 @@ export const loginUser = async (
       });
     }
   } catch (error) {
+    captureException(error);
     return reply.code(401).send({
       error: "Unauthorized",
       message: "Invalid email or password.",
@@ -126,18 +136,16 @@ export const loginUser = async (
     });
   }
 
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    throw new Error("JWT secret environment variable is not set");
+  try {
+    token = createJWTToken(user.id);
+  } catch (error) {
+    captureException(error);
+    return reply.code(500).send({
+      error: "Internal Server Error",
+      message: "An error occurred while logging in.",
+      statusCode: 500,
+    });
   }
-
-  const token = jwt.sign(
-    {
-      userId: user.id,
-    },
-    jwtSecret,
-    { expiresIn: "7d" }
-  );
 
   if (!token) {
     return reply.code(401).send({
@@ -147,8 +155,9 @@ export const loginUser = async (
     });
   }
 
+  reply.setCookie(TOKEN_COOKIE_NAME, token, TOKEN_COOKIE_SETTINGS);
+
   return reply.send({
-    token,
     user: {
       id: user.id,
       email: user.email,
@@ -157,13 +166,11 @@ export const loginUser = async (
 };
 
 export const getUser = async (req: FastifyRequest, reply: FastifyReply) => {
-  const { server, user } = req;
+  const { server } = req;
   try {
-    const queriedUser = await server.prisma.user.findUnique({
-      where: { id: user.id },
-    });
+    const user = await getUserById(server.prisma, req.user.id);
 
-    if (!queriedUser) {
+    if (!user) {
       return reply.status(404).send({
         error: "Not Found",
         message: "User not found.",
@@ -171,10 +178,17 @@ export const getUser = async (req: FastifyRequest, reply: FastifyReply) => {
       });
     }
 
+    // To support migrating to cookies while keeping existing functionality
+    // TODO: Remove after FE migration to cookies
+    const token = getTokenFromRequest(req);
+    if (token) {
+      reply.setCookie(TOKEN_COOKIE_NAME, token, TOKEN_COOKIE_SETTINGS);
+    }
+
     return reply.send({
       user: {
-        id: queriedUser.id,
-        email: queriedUser.email,
+        id: user.id,
+        email: user.email,
       },
     });
   } catch (error) {
@@ -185,3 +199,8 @@ export const getUser = async (req: FastifyRequest, reply: FastifyReply) => {
     });
   }
 };
+
+export const logoutUser = async (_: FastifyRequest, reply: FastifyReply) => {
+  reply.clearCookie(TOKEN_COOKIE_NAME, { path: "/" });
+  return reply.send({ message: "Logged out successfully" });
+}
