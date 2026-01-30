@@ -8,21 +8,23 @@ export const getUsers = async (prisma: PrismaClient) => {
     const users = await prisma.user.findMany();
     return users;
   } catch (error) {
-    throw new Error(`Failed to fetch users: ${error.message}`);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to fetch users: ${message}`);
   }
 };
 
 export const createNewUser = async (
   prisma: PrismaClient,
   email: string,
-  password: string
+  password: string,
 ) => {
   const saltRounds = 10;
   let hashedPassword: string;
   try {
     hashedPassword = await bcrypt.hash(password, saltRounds);
   } catch (error) {
-    throw new Error(`Failed to hash password: ${error.message}`);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to hash password: ${message}`);
   }
 
   try {
@@ -31,8 +33,9 @@ export const createNewUser = async (
     });
 
     return newUser;
-  } catch (e) {
-    throw new Error(`Failed to create user: ${e.message}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to create user: ${message}`);
   }
 };
 
@@ -47,7 +50,7 @@ export const createJWTToken = (userId: string): string => {
       userId: userId,
     },
     jwtSecret,
-    { expiresIn: "7d" }
+    { expiresIn: "7d" },
   );
 
   return token;
@@ -55,26 +58,26 @@ export const createJWTToken = (userId: string): string => {
 
 export const getUserByEmail = async (
   prisma: PrismaClient,
-  email: string
+  email: string,
 ): Promise<User | null> => {
   try {
     const user = await prisma.user.findUnique({ where: { email } });
     return user;
   } catch (error) {
-    throw new Error(
-      `Failed to fetch user with email ${email}: ${error.message}`
-    );
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to fetch user with email ${email}: ${message}`);
   }
 };
 
 export const getUserById = async (
   prisma: PrismaClient,
-  userId: string
+  userId: string,
 ): Promise<User | null> => {
   try {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     return user;
   } catch (error) {
-    throw new Error(`Failed to fetch user with id ${userId}: ${error.message}`);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to fetch user with id ${userId}: ${message}`);
   }
 };

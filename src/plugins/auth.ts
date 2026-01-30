@@ -38,7 +38,6 @@ export const verifyTokenPlugin: FastifyPluginAsync = fp(async (fastify) => {
 });
 
 export function getTokenFromRequest(req: FastifyRequest): string | undefined {
-  const authHeader = req.headers.authorization;
   let token: string | undefined;
 
   token = getTokenFromCookies(req);

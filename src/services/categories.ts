@@ -16,7 +16,7 @@ const defaultCategories: Pick<Category, "name" | "type" | "color">[] = [
 
 export async function createDefaultCategories(
   prisma: PrismaClient,
-  userId: string
+  userId: string,
 ) {
   try {
     await prisma.category.createMany({
@@ -25,7 +25,8 @@ export async function createDefaultCategories(
         userId,
       })),
     });
-  } catch (error) {
-    throw new Error(`Failed to create default categories: ${error.message}`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to create default categories: ${message}`);
   }
 }

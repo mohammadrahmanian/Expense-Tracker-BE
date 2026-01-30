@@ -19,6 +19,7 @@ const TOKEN_COOKIE_SETTINGS: CookieSerializeOptions = {
   sameSite: "lax",
   maxAge: 7 * 24 * 60 * 60, // 7 days
   path: "/",
+  secure: process.env.NODE_ENV === "production",
 };
 
 export const createUser = async (
@@ -75,7 +76,7 @@ export const createUser = async (
   }
 
   try {
-    createDefaultCategories(server.prisma, newUser.id);
+    await createDefaultCategories(server.prisma, newUser.id);
   } catch {
     captureException("Error creating default categories for new user");
     // Not critical, so we don't block user creation

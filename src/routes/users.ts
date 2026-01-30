@@ -1,12 +1,16 @@
 import { FastifyInstance } from "fastify";
-import { createUser, getUser, loginUser, logoutUser } from "../controllers/users";
+import {
+  createUser,
+  getUser,
+  loginUser,
+  logoutUser,
+} from "../controllers/users";
 
 const createUserOpts = {
   schema: {
     response: {
       201: {
         properties: {
-          token: { type: "string" },
           user: { $ref: "userSchema#" },
         },
       },
@@ -37,7 +41,6 @@ const loginUserOpts = {
       200: {
         type: "object",
         properties: {
-          token: { type: "string" },
           user: { $ref: "userSchema#" },
         },
       },
@@ -54,8 +57,7 @@ const logoutUserOpts = {
       200: {
         type: "object",
         properties: {
-          token: { type: "string" },
-          user: { $ref: "userSchema#" },
+          message: { type: "string" },
         },
       },
     },
