@@ -1,12 +1,16 @@
 import { FastifyInstance } from "fastify";
-import { createUser, getUser, loginUser } from "../controllers/users";
+import {
+  createUser,
+  getUser,
+  loginUser,
+  logoutUser,
+} from "../controllers/users";
 
 const createUserOpts = {
   schema: {
     response: {
       201: {
         properties: {
-          token: { type: "string" },
           user: { $ref: "userSchema#" },
         },
       },
@@ -37,7 +41,6 @@ const loginUserOpts = {
       200: {
         type: "object",
         properties: {
-          token: { type: "string" },
           user: { $ref: "userSchema#" },
         },
       },
@@ -46,6 +49,20 @@ const loginUserOpts = {
     },
   },
   handler: loginUser,
+};
+
+const logoutUserOpts = {
+  schema: {
+    response: {
+      200: {
+        type: "object",
+        properties: {
+          message: { type: "string" },
+        },
+      },
+    },
+  },
+  handler: logoutUser,
 };
 
 const getUserOpts = {
@@ -66,6 +83,11 @@ export const usersRoutes = (fastify: FastifyInstance, options, done) => {
   fastify.post("/users/register", createUserOpts);
 
   fastify.post("/users/login", loginUserOpts);
+
+  fastify.post("/users/logout", {
+    ...logoutUserOpts,
+    preHandler: fastify.auth([fastify.verifyToken]),
+  });
 
   fastify.get("/users/me", {
     ...getUserOpts,

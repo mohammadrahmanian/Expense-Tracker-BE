@@ -8,14 +8,12 @@ export interface JWTPayload extends JwtPayload {
 
 export const verifyTokenPlugin: FastifyPluginAsync = fp(async (fastify) => {
   const verifyToken = async (req: FastifyRequest) => {
-    const authHeader = req.headers.authorization;
+    const token = getTokenFromRequest(req);
 
-    const token = authHeader?.startsWith("Bearer ")
-      ? authHeader.slice(7)
-      : authHeader;
     if (!token) {
       throw new Error("No token provided");
     }
+
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
       throw new Error("JWT secret environment variable is not set");
@@ -38,3 +36,31 @@ export const verifyTokenPlugin: FastifyPluginAsync = fp(async (fastify) => {
 
   fastify.decorate("verifyToken", verifyToken);
 });
+
+export function getTokenFromRequest(req: FastifyRequest): string | undefined {
+  let token: string | undefined;
+
+  token = getTokenFromCookies(req);
+
+  // Fallback to Authorization header if no cookie is found
+  // Remove after FE migration to cookies
+  if (!token) {
+    token = getTokenFromAuthHeader(req);
+  }
+  return token;
+}
+
+function getTokenFromCookies(req: FastifyRequest): string | undefined {
+  if (!req.cookies) return undefined;
+  return req.cookies.token;
+}
+
+/* 
+  Temporary: helper function to read token from Authorization header
+  @deprecated Remove after FE migration to cookies
+*/
+function getTokenFromAuthHeader(req: FastifyRequest): string | undefined {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return undefined;
+  return authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
+}
