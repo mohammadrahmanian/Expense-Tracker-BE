@@ -130,10 +130,11 @@ export const loginUser = async (
     }
   } catch (error) {
     captureException(error);
-    return reply.code(401).send({
-      error: "Unauthorized",
-      message: "Invalid email or password.",
-      statusCode: 401,
+    
+    return reply.code(500).send({
+      error: "Internal Server Error",
+      message: "An error occurred while logging in.",
+      statusCode: 500,
     });
   }
 
