@@ -49,6 +49,10 @@ fastify.register(FastifySwagger, {
   },
 });
 
+if (!process.env.CORS_ORIGIN) {
+  throw new Error("CORS_ORIGIN is not defined in environment variables");
+}
+
 fastify.register(FastifyCors, {
   origin: process.env.CORS_ORIGIN,
   methods: ["GET", "POST", "PUT", "DELETE"],
