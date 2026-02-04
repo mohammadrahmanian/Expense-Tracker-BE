@@ -1,3 +1,4 @@
+import { captureException } from "@sentry/node";
 import { FastifyPluginAsync, FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
 import jwt, { JwtPayload } from "jsonwebtoken";
@@ -6,28 +7,36 @@ export interface JWTPayload extends JwtPayload {
   userId: string;
 }
 
+const errorMessage = "Authentication failed";
+
 export const verifyTokenPlugin: FastifyPluginAsync = fp(async (fastify) => {
   const verifyToken = async (req: FastifyRequest) => {
     const token = getTokenFromRequest(req);
 
     if (!token) {
-      throw new Error("No token provided");
+      captureException(new Error("No token provided"), { level: "info" });
+      throw new Error(errorMessage);
     }
 
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-      throw new Error("JWT secret environment variable is not set");
+      captureException(new Error("JWT secret not set"), { level: "fatal" });
+      throw new Error(errorMessage);
     }
     const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
     if (!decoded.userId) {
-      throw new Error("Invalid token structure");
+      captureException(new Error("Invalid token structure"), { level: "info" });
+      throw new Error(errorMessage);
     }
 
     const user = await fastify.prisma.user.findUnique({
       where: { id: decoded.userId },
     });
 
-    if (!user) throw new Error("User not found");
+    if (!user) {
+      captureException(new Error("User not found"), { level: "info" });
+      throw new Error(errorMessage);
+    }
 
     req.user = {
       id: user.id,
