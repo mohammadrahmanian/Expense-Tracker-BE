@@ -23,9 +23,19 @@ export const verifyTokenPlugin: FastifyPluginAsync = fp(async (fastify) => {
       captureException(new Error("JWT secret not set"), { level: "fatal" });
       throw new Error(errorMessage);
     }
-    const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
+
+    let decoded: JWTPayload;
+    try {
+      decoded = jwt.verify(token, jwtSecret) as JWTPayload;
+    } catch (err) {
+      captureException(err, { level: "info" });
+      throw new Error(errorMessage);
+    }
+
     if (!decoded.userId) {
-      captureException(new Error("Invalid token structure"), { level: "info" });
+      captureException(new Error("Invalid token structure"), {
+        level: "info",
+      });
       throw new Error(errorMessage);
     }
 
