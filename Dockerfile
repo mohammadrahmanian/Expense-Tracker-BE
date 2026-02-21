@@ -27,9 +27,6 @@ RUN apt-get update -qq && \
 COPY package-lock.json package.json ./
 RUN npm ci --include=dev && npm cache clean --force
 
-# Build the application
-RUN npm run build
-
 # Copy prisma schema first
 COPY prisma ./prisma
 
@@ -39,6 +36,8 @@ RUN npx prisma generate
 # Copy rest of application code
 COPY . .
 
+# Build the application
+RUN npm run build
 
 # Final stage for app image
 FROM base
