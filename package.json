@@ -2,7 +2,7 @@
   "name": "expense-tracker-be",
   "version": "1.0.0",
   "description": "This project was bootstrapped with Fastify-CLI.",
-  "main": "app.ts",
+  "main": "dist/app.js",
   "directories": {
     "test": "test"
   },
@@ -12,6 +12,7 @@
     "dev": "tsx --watch app.ts",
     "build": "tsup ./app.ts --format esm --out-dir dist --platform node --clean"
   },
+  "type": "module",
   "keywords": [],
   "author": "",
   "license": "ISC",
