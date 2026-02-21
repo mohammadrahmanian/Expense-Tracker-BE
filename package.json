@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "start": "node dist/app.mjs",
+    "start": "node dist/app.js",
     "test": "vitest --watch",
     "dev": "tsx --watch app.ts",
     "build": "tsup ./app.ts --format esm --out-dir dist --platform node --clean"
