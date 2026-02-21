@@ -7,10 +7,10 @@
     "test": "test"
   },
   "scripts": {
-    "start": "tsx app.ts",
+    "start": "node dist/app.mjs",
     "test": "vitest --watch",
     "dev": "tsx --watch app.ts",
-    "build": "tsup ./app.ts --format esm --out-dir dist"
+    "build": "tsup ./app.ts --format esm --out-dir dist --platform node --clean"
   },
   "keywords": [],
   "author": "",
