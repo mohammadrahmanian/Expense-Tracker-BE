@@ -45,4 +45,5 @@ COPY --from=build /app /app
 
 # Start the server by default, this can be overwritten at runtime
 EXPOSE $PORT
+CMD [ "npm", "run", "build" ]
 CMD [ "npm", "run", "start" ]
