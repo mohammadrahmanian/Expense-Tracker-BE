@@ -6,3 +6,7 @@ npm-debug.log*
 
 .env
 fly-db-credentials.txt
+
+db_backups
+
+dist

@@ -9,9 +9,9 @@
   "scripts": {
     "start": "tsx app.ts",
     "test": "vitest --watch",
-    "dev": "tsx --watch app.ts"
+    "dev": "tsx --watch app.ts",
+    "build": "tsup ./app.ts --format esm --out-dir dist"
   },
-  "type": "module",
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -47,6 +47,7 @@
     "@types/node": "^22.15.29",
     "prisma": "^6.16.1",
     "ts-node": "^10.9.2",
+    "tsup": "^8.5.1",
     "vitest": "^3.2.4"
   }
 }
