@@ -9,6 +9,7 @@ on:
 jobs:
   migrate:
     runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

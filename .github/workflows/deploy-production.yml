@@ -7,6 +7,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,6 +22,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
           script: |
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.s          
