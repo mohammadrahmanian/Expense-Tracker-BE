@@ -24,8 +24,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script_stop: true
           script: |
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.s          
+            export NVM_DIR=$HOME/.nvm
+            source $NVM_DIR/nvm.sh
             cd /home/deployer/expensio-be
             git pull origin main
             npm ci
