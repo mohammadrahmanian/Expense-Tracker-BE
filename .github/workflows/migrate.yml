@@ -5,6 +5,7 @@ on:
       - prisma/migrations/**
     branches:
       - main
+      - staging
 jobs:
   migrate:
     runs-on: ubuntu-latest
