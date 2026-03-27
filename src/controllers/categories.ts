@@ -2,9 +2,10 @@ import { Category, Type } from "@prisma/client";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { CATEGORY_CONFIG } from "../config/constants.js";
 import { CategoryWithChildren } from "../types/category.js";
+import { captureException } from "@sentry/node";
 
 const getCategoryInclude = (
-  depth: number = CATEGORY_CONFIG.MAX_QUERY_DEPTH
+  depth: number = CATEGORY_CONFIG.MAX_QUERY_DEPTH,
 ) => {
   if (depth <= 0) return {};
 
@@ -20,7 +21,7 @@ const getCategoryInclude = (
 const getParentDepth = async (
   categoryId: string,
   server: FastifyInstance,
-  userId: string
+  userId: string,
 ) => {
   const category = await server.prisma.category.findUnique({
     where: { id: categoryId, userId },
@@ -44,7 +45,7 @@ const getChildrenDepth = (category: CategoryWithChildren) => {
 };
 
 const getFlattenedCategories = (
-  category: CategoryWithChildren
+  category: CategoryWithChildren,
 ): CategoryWithChildren[] => {
   if (!category.children) return [category];
   return [category, ...category.children.flatMap(getFlattenedCategories)];
@@ -98,7 +99,7 @@ export const getCategories = async (
       depth?: string;
     };
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   try {
     const { user, server } = req;
@@ -115,6 +116,7 @@ export const getCategories = async (
     return reply.send(userCategories);
   } catch (error) {
     req.log.error(error);
+    captureException(error);
     return reply.status(500).send({ error: "Internal Server Error" });
   }
 };
@@ -126,7 +128,7 @@ export const getCategoryById = async (
       depth?: string;
     };
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   try {
     const { id } = req.params;
@@ -149,13 +151,14 @@ export const getCategoryById = async (
     return reply.send(category);
   } catch (error) {
     req.log.error(error);
+    captureException(error);
     return reply.status(500).send({ error: "Internal Server Error" });
   }
 };
 
 export const createCategory = async (
   req: FastifyRequest<{ Body: Category }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   try {
     const { user, server } = req;
@@ -207,6 +210,7 @@ export const createCategory = async (
     if (error instanceof Error) {
       return reply.status(400).send({ error: error.message });
     } else {
+      captureException(error);
       return reply.status(500).send({ error: "Internal server error" });
     }
   }
@@ -216,7 +220,7 @@ type EditCategoryBody = Partial<Category>;
 
 export const editCategory = async (
   req: FastifyRequest<{ Body: EditCategoryBody; Params: { id: string } }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   try {
     const { user, server } = req;
@@ -228,8 +232,8 @@ export const editCategory = async (
     // Create allowedFields object with only valid Category fields (excluding undefined values)
     const allowedFields = Object.fromEntries(
       Object.entries({ name, type, description, color, icon }).filter(
-        ([, value]) => value !== undefined
-      )
+        ([, value]) => value !== undefined,
+      ),
     );
 
     if (parentId) {
@@ -275,6 +279,7 @@ export const editCategory = async (
     if (error instanceof Error) {
       return reply.status(400).send({ error: error.message });
     } else {
+      captureException(error);
       return reply.status(500).send({ error: "Internal server error" });
     }
   }
@@ -282,7 +287,7 @@ export const editCategory = async (
 
 export const deleteCategory = async (
   req: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { id } = req.params;
   const { user, server } = req;
@@ -294,6 +299,7 @@ export const deleteCategory = async (
     return reply.code(204).send();
   } catch (error) {
     req.log.error(error);
+    captureException(error);
     return reply.status(500).send({ error: "Internal server error" });
   }
 };

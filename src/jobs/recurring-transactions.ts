@@ -7,6 +7,7 @@ import {
 } from "../services/recurring-transactions";
 import { createUserTransaction } from "../services/transactions";
 import { calculateNextOccurrenceOnce } from "../utils/helpers";
+import { captureException } from "@sentry/node";
 
 export const createTransactionFromRecurringTransaction = async ({
   prisma,
@@ -26,34 +27,48 @@ export const createTransactionFromRecurringTransaction = async ({
       nextOccurrence = calculateNextOccurrenceOnce(
         recurringTransaction.recurrenceFrequency,
         recurringTransaction.startDate,
-        recurringTransaction.nextOccurrence
+        recurringTransaction.nextOccurrence,
       );
     } catch (error) {
+      captureException(error, {
+        tags: {
+          recurringTransactionId: recurringTransaction.id,
+        },
+      });
       log.error(
-        `Failed to calculate next occurrence for recurring transaction ID ${recurringTransaction.id}: ${error.message}`
+        `Failed to calculate next occurrence for recurring transaction ID ${recurringTransaction.id}: ${error.message}`,
       );
       continue; // skip updating this recurring transaction
     }
 
     await prisma.$transaction(async (tx) => {
-      await createUserTransaction({
-        transaction: {
-          amount: recurringTransaction.amount,
-          date: recurringTransaction.nextOccurrence,
-          title: recurringTransaction.title,
-          description: recurringTransaction.description || undefined,
-          type: recurringTransaction.type,
-        },
-        userId: recurringTransaction.userId,
-        categoryId: recurringTransaction.categoryId,
-        prisma: tx,
-      });
+      try {
+        await createUserTransaction({
+          transaction: {
+            amount: recurringTransaction.amount,
+            date: recurringTransaction.nextOccurrence,
+            title: recurringTransaction.title,
+            description: recurringTransaction.description || undefined,
+            type: recurringTransaction.type,
+          },
+          userId: recurringTransaction.userId,
+          categoryId: recurringTransaction.categoryId,
+          prisma: tx,
+        });
 
-      await updateRecurringTransactionNextOccurrence({
-        id: recurringTransaction.id,
-        nextOccurrence,
-        prisma: tx,
-      });
+        await updateRecurringTransactionNextOccurrence({
+          id: recurringTransaction.id,
+          nextOccurrence,
+          prisma: tx,
+        });
+      } catch (error) {
+        captureException(error, {
+          tags: {
+            recurringTransactionId: recurringTransaction.id,
+          },
+        });
+        throw error;
+      }
     });
   }
 };
