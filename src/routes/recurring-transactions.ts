@@ -19,6 +19,7 @@ const getRecurringTransactionOptions = {
           },
         },
       },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: getRecurringTransactions,
@@ -34,8 +35,12 @@ const createRecurringTransactionOptions = {
         amount: { $ref: "recurringTransactionSchema#/properties/amount" },
         startDate: { $ref: "recurringTransactionSchema#/properties/startDate" },
         endDate: { $ref: "recurringTransactionSchema#/properties/endDate" },
-        description: { $ref: "recurringTransactionSchema#/properties/description" },
-        categoryId: { $ref: "recurringTransactionSchema#/properties/categoryId" },
+        description: {
+          $ref: "recurringTransactionSchema#/properties/description",
+        },
+        categoryId: {
+          $ref: "recurringTransactionSchema#/properties/categoryId",
+        },
         type: { $ref: "recurringTransactionSchema#/properties/type" },
         recurrenceFrequency: {
           $ref: "recurringTransactionSchema#/properties/recurrenceFrequency",
@@ -44,7 +49,7 @@ const createRecurringTransactionOptions = {
     },
     response: {
       201: { $ref: "recurringTransactionSchema#" },
-      400: { $ref: "errorSchema#" },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: createRecurringTransaction,
@@ -56,9 +61,7 @@ const deleteRecurringTransactionOptions = {
       204: {
         type: "null",
       },
-      400: {
-        $ref: "errorSchema#",
-      },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: deleteRecurringTransaction,
@@ -85,9 +88,8 @@ const editRecurringTransactionOptions = {
       204: {
         type: "null",
       },
-      400: {
-        $ref: "errorSchema#",
-      },
+      400: { $ref: "errorSchema#" },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: editRecurringTransaction,
@@ -104,7 +106,7 @@ export const toggleRecurringTransactionOptions = {
     },
     response: {
       204: { type: "null" },
-      400: { $ref: "errorSchema#" },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: toggleRecurringTransaction,
