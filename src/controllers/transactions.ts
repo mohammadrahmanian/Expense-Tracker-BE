@@ -29,7 +29,7 @@ export const getTransactions: RouteHandlerMethod = async (
       query?: string;
     };
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { user, server } = req;
   const {
@@ -87,7 +87,7 @@ export const getTransactions: RouteHandlerMethod = async (
 
 export const getTransaction: RouteHandlerMethod = async (
   req: FastifyRequest<{ Params: RequestParams }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { id } = req.params;
   const { user, server } = req;
@@ -119,7 +119,7 @@ export const createTransaction = async (
       recurrenceFrequency: RecurrenceFrequency;
     };
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const {
     user,
@@ -215,7 +215,7 @@ export const createTransaction = async (
 
 export const deleteTransaction = async (
   req: FastifyRequest<{ Params: RequestParams }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { id } = req.params;
   const { user, server } = req;
@@ -237,7 +237,7 @@ export const deleteTransaction = async (
 // Edit Transaction doesn't allow recurrence change because of performance issue it can cause
 export const editTransaction = async (
   req: FastifyRequest<{ Params: RequestParams; Body: Partial<Transaction> }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { id } = req.params;
   const {
@@ -254,7 +254,7 @@ export const editTransaction = async (
       type,
       description,
       date,
-    }).filter(([, value]) => value !== undefined)
+    }).filter(([, value]) => value !== undefined),
   );
 
   const transactionToBeUpdated = await prisma.transaction.findUnique({
@@ -276,8 +276,11 @@ export const editTransaction = async (
 
   if (transactionToBeUpdated.userId !== user.id) {
     log.error(`User ${user.id} is not authorized to edit transaction ${id}`);
+    captureException(new Error("Unauthorized transaction edit attempt"), {
+      tags: { endpoint: "editTransaction" },
+      extra: { transactionId: id },
+    });
     // Returning 404 to avoid exposing the existence of the transaction
-    captureException(new Error(`User ${user.id} is not authorized to edit transaction ${id}`));
     return reply.code(404).send({
       error: "Not Found",
       message: `Transaction with id ${id} not found`,
@@ -346,7 +349,7 @@ export const editTransaction = async (
 
 export const importTransactionFile = async (
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { server, user } = request;
 
