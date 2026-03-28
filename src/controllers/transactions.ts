@@ -338,9 +338,8 @@ export const editTransaction = async (
   } catch (error) {
     log.error("Error editing transaction:", error);
     captureException(error);
-    return reply.code(400).send({
-      error: "Bad Request",
-      message: "Failed to edit transaction",
+    return reply.code(500).send({
+      error: "Internal Server Error",
     });
   }
 };
