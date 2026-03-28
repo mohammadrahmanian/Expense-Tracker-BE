@@ -77,8 +77,8 @@ export const createUser = async (
 
   try {
     await createDefaultCategories(server.prisma, newUser.id);
-  } catch {
-    captureException(new Error("Error creating default categories for new user"));
+  } catch (error) {
+    captureException(error);
   }
 
   reply.setCookie(TOKEN_COOKIE_NAME, token, TOKEN_COOKIE_SETTINGS);

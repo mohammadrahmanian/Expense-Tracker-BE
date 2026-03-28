@@ -154,7 +154,7 @@ export const createTransaction = async (
     });
   } catch (error) {
     log.error("Validation error:", error);
-    captureException(error);
+    captureException(error, { level: "info" });
     return reply.code(400).send({
       error: "Bad Request",
       message: error.message,
@@ -226,7 +226,7 @@ export const deleteTransaction = async (
 
     return reply.code(204).send();
   } catch (error) {
-    server.log.error("Error detecting transaction:", error);
+    server.log.error("Error deleting transaction:", error);
     captureException(error);
     return reply.code(500).send({
       error: "Internal Server Error",
