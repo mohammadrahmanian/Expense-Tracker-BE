@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { getUserDashboardReports } from "../services/reports";
+import { captureException } from "@sentry/node";
 
 export const getDashboardStats = async (
   req: FastifyRequest,
@@ -78,6 +79,7 @@ export const getDashboardStats = async (
     });
   } catch (error) {
     req.log.error("Error fetching dashboard stats:", error);
+    captureException(error);
     return reply.status(500).send({ error: "Internal Server Error" });
   }
 };
@@ -131,6 +133,7 @@ export const getDashboardReports = async (
     return reply.send(reports);
   } catch (e) {
     req.log.error("Error fetching dashboard reports:", e);
+    captureException(e);
     return reply.status(500).send({ error: "Internal Server Error" });
   }
 };

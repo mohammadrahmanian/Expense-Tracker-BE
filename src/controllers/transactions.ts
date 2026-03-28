@@ -9,6 +9,7 @@ import {
   getUserTransactions,
   validateUserTransactionType,
 } from "../services/transactions";
+import { captureException } from "@sentry/node";
 
 type RequestParams = {
   id: string;
@@ -28,7 +29,7 @@ export const getTransactions: RouteHandlerMethod = async (
       query?: string;
     };
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { user, server } = req;
   const {
@@ -77,6 +78,7 @@ export const getTransactions: RouteHandlerMethod = async (
     return reply.send(transactions);
   } catch (error) {
     server.log.error("Error fetching transactions:", error);
+    captureException(error);
     return reply.code(500).send({
       error: "Internal Server Error",
     });
@@ -85,7 +87,7 @@ export const getTransactions: RouteHandlerMethod = async (
 
 export const getTransaction: RouteHandlerMethod = async (
   req: FastifyRequest<{ Params: RequestParams }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { id } = req.params;
   const { user, server } = req;
@@ -103,6 +105,7 @@ export const getTransaction: RouteHandlerMethod = async (
     return reply.send(transaction);
   } catch (error) {
     server.log.error("Error fetching transaction:", error);
+    captureException(error);
     return reply.code(500).send({
       error: "Internal Server Error",
     });
@@ -116,7 +119,7 @@ export const createTransaction = async (
       recurrenceFrequency: RecurrenceFrequency;
     };
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const {
     user,
@@ -151,6 +154,7 @@ export const createTransaction = async (
     });
   } catch (error) {
     log.error("Validation error:", error);
+    captureException(error, { level: "info" });
     return reply.code(400).send({
       error: "Bad Request",
       message: error.message,
@@ -184,6 +188,7 @@ export const createTransaction = async (
       return reply.code(201).send(transaction);
     } catch (error) {
       log.error("Error creating recurring transaction:", error);
+      captureException(error);
       return reply.code(500).send({
         error: "Internal Server Error",
       });
@@ -201,6 +206,7 @@ export const createTransaction = async (
     return reply.code(201).send(transaction);
   } catch (error) {
     log.error("Error creating transaction:", error);
+    captureException(error);
     return reply.code(500).send({
       error: "Internal Server Error",
     });
@@ -209,7 +215,7 @@ export const createTransaction = async (
 
 export const deleteTransaction = async (
   req: FastifyRequest<{ Params: RequestParams }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { id } = req.params;
   const { user, server } = req;
@@ -220,7 +226,8 @@ export const deleteTransaction = async (
 
     return reply.code(204).send();
   } catch (error) {
-    server.log.error("Error detecting transaction:", error);
+    server.log.error("Error deleting transaction:", error);
+    captureException(error);
     return reply.code(500).send({
       error: "Internal Server Error",
     });
@@ -230,7 +237,7 @@ export const deleteTransaction = async (
 // Edit Transaction doesn't allow recurrence change because of performance issue it can cause
 export const editTransaction = async (
   req: FastifyRequest<{ Params: RequestParams; Body: Partial<Transaction> }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { id } = req.params;
   const {
@@ -247,7 +254,7 @@ export const editTransaction = async (
       type,
       description,
       date,
-    }).filter(([, value]) => value !== undefined)
+    }).filter(([, value]) => value !== undefined),
   );
 
   const transactionToBeUpdated = await prisma.transaction.findUnique({
@@ -269,6 +276,10 @@ export const editTransaction = async (
 
   if (transactionToBeUpdated.userId !== user.id) {
     log.error(`User ${user.id} is not authorized to edit transaction ${id}`);
+    captureException(new Error("Unauthorized transaction edit attempt"), {
+      tags: { endpoint: "editTransaction" },
+      extra: { transactionId: id },
+    });
     // Returning 404 to avoid exposing the existence of the transaction
     return reply.code(404).send({
       error: "Not Found",
@@ -290,6 +301,7 @@ export const editTransaction = async (
       });
     } catch (error) {
       log.error("Validation error:", error);
+      captureException(error);
       return reply.code(400).send({
         error: "Bad Request",
         message: "Failed to edit transaction",
@@ -307,6 +319,7 @@ export const editTransaction = async (
         });
       } catch (error) {
         log.error("Validation error:", error);
+        captureException(error);
         return reply.code(400).send({
           error: "Bad Request",
           message: "Failed to edit transaction",
@@ -327,16 +340,16 @@ export const editTransaction = async (
     return reply.code(204).send();
   } catch (error) {
     log.error("Error editing transaction:", error);
-    return reply.code(400).send({
-      error: "Bad Request",
-      message: "Failed to edit transaction",
+    captureException(error);
+    return reply.code(500).send({
+      error: "Internal Server Error",
     });
   }
 };
 
 export const importTransactionFile = async (
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { server, user } = request;
 
@@ -371,6 +384,7 @@ export const importTransactionFile = async (
     });
   } catch (error) {
     server.log.error("Error importing transactions:", error);
+    captureException(error);
     return reply.code(500).send({
       error: "Internal Server Error",
     });

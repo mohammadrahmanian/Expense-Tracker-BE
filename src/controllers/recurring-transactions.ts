@@ -8,10 +8,11 @@ import {
   editUserRecurringTransaction,
   getUserRecurringTransactions,
 } from "../services/recurring-transactions";
+import { captureException } from "@sentry/node";
 
 export const getRecurringTransactions = async (
   req: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { server, user } = req;
 
@@ -23,15 +24,16 @@ export const getRecurringTransactions = async (
     return reply.send({ recurringTransactions });
   } catch (error) {
     server.log.error("Error fetching recurring transactions", error);
-    return reply.status(400).send({
-      error: "Failed to fetch recurring transactions",
+    captureException(error);
+    return reply.status(500).send({
+      error: "Internal Server Error",
     });
   }
 };
 
 export const createRecurringTransaction = async (
   req: FastifyRequest<{ Body: RecurringTransaction }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { server, user } = req;
   const data = req.body;
@@ -75,8 +77,9 @@ export const createRecurringTransaction = async (
     return reply.code(201).send(newRecurringTransaction);
   } catch (error) {
     server.log.error("Error creating recurring transaction", error);
-    return reply.status(400).send({
-      error: "Failed to create recurring transaction",
+    captureException(error);
+    return reply.status(500).send({
+      error: "Internal Server Error",
     });
   }
 };
@@ -87,7 +90,7 @@ type RequestParams = {
 
 export const deleteRecurringTransaction = async (
   req: FastifyRequest<{ Params: RequestParams }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { user, server } = req;
   const { id } = req.params;
@@ -101,8 +104,9 @@ export const deleteRecurringTransaction = async (
     return reply.code(204).send();
   } catch (error) {
     server.log.error("Error deleting recurring transaction", error);
-    return reply.status(400).send({
-      error: "Failed to delete recurring transaction",
+    captureException(error);
+    return reply.status(500).send({
+      error: "Internal Server Error",
     });
   }
 };
@@ -112,7 +116,7 @@ export const editRecurringTransaction = async (
     Body: Partial<RecurringTransaction>;
     Params: RequestParams;
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { user, server } = req;
   const { id } = req.params;
@@ -131,15 +135,16 @@ export const editRecurringTransaction = async (
     return reply.code(204).send();
   } catch (error) {
     server.log.error("Error editing recurring transaction", error);
-    return reply.status(400).send({
-      error: "Failed to edit recurring transaction",
+    captureException(error);
+    return reply.status(500).send({
+      error: "Internal Server Error",
     });
   }
 };
 
 export const toggleRecurringTransaction = async (
   req: FastifyRequest<{ Body: { active: boolean }; Params: RequestParams }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) => {
   const { user, server } = req;
   const { active } = req.body;
@@ -164,8 +169,9 @@ export const toggleRecurringTransaction = async (
     }
   } catch (error) {
     server.log.error("Error toggling recurring transaction", error);
-    return reply.status(400).send({
-      error: "Failed to toggle recurring transaction",
+    captureException(error);
+    return reply.status(500).send({
+      error: "Internal Server Error",
     });
   }
 };

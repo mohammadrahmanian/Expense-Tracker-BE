@@ -130,6 +130,8 @@ const getDashboardReportsOpts = {
           },
         },
       },
+      400: { $ref: "errorSchema#" },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: getDashboardReports,

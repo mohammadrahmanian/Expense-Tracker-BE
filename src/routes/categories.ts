@@ -14,6 +14,7 @@ const getCategoriesOpts = {
         type: "array",
         items: { $ref: "categorySchema#" },
       },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: getCategories,
@@ -31,6 +32,7 @@ const getCategoryOpts = {
     response: {
       200: { $ref: "categorySchema#" },
       404: { $ref: "errorSchema#" },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: getCategoryById,
@@ -53,7 +55,7 @@ const createCategoryOpts = {
     response: {
       201: { $ref: "categorySchema#" },
       400: { $ref: "errorSchema#" },
-      401: { $ref: "errorSchema#" },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: createCategory,
@@ -72,7 +74,7 @@ const deleteCategoryOpts = {
       204: {
         type: "null",
       },
-      404: { $ref: "errorSchema#" },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: deleteCategory,
@@ -102,7 +104,9 @@ const editCategoryOpts = {
       204: {
         type: "null",
       },
+      400: { $ref: "errorSchema#" },
       404: { $ref: "errorSchema#" },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: editCategory,

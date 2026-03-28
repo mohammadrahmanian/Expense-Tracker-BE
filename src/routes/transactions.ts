@@ -42,6 +42,8 @@ const getTransactionsOpts = {
           items: { type: "array", items: { $ref: "transactionSchema#" } },
         },
       },
+      400: { $ref: "errorSchema#" },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: getTransactions,
@@ -52,6 +54,7 @@ const getTransactionOpts = {
     response: {
       200: { $ref: "transactionSchema#" },
       404: { $ref: "errorSchema#" },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: getTransaction,
@@ -78,6 +81,7 @@ const createTransactionOpts = {
     response: {
       201: { $ref: "transactionSchema#" },
       400: { $ref: "errorSchema#" },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: createTransaction,
@@ -89,7 +93,7 @@ const deleteTransactionOpts = {
       204: {
         type: "null",
       },
-      404: { $ref: "errorSchema#" },
+      500: { $ref: "errorSchema#" },
     },
     params: {
       type: "object",
@@ -118,7 +122,9 @@ const editTransactionOpts = {
       204: {
         type: "null",
       },
+      400: { $ref: "errorSchema#" },
       404: { $ref: "errorSchema#" },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: editTransaction,
@@ -136,6 +142,7 @@ const importTransactionOpts = {
         },
       },
       400: { $ref: "errorSchema#" },
+      500: { $ref: "errorSchema#" },
     },
   },
   handler: importTransactionFile,
