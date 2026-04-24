@@ -279,7 +279,7 @@ export const editCategory = async ({
       { cause: "VALIDATION_ERROR" },
     );
   }
-  
+
   if (parentId) {
     // Get current category to determine type if not provided in update
     const currentCategory = await getCategory({
@@ -309,19 +309,44 @@ export const editCategory = async ({
 
     const parentDepth = parentValidityResult.parentCategory.depth;
     const childrenDepth = getChildrenDepth(currentCategory);
+    const newDepth = parentDepth + 1;
+    const depthDelta = newDepth - currentCategory.depth;
 
-    if (childrenDepth + parentDepth > CATEGORY_CONFIG.MAX_NESTING_DEPTH) {
+    const newMaxDepth = newDepth + (childrenDepth - currentCategory.depth);
+    if (newMaxDepth > CATEGORY_CONFIG.MAX_NESTING_DEPTH) {
       throw new Error("Depth exceeds maximum allowed", {
         cause: "VALIDATION_ERROR",
       });
     }
+
+    // Update the category and all descendants' depths in a transaction
+    const descendants = getFlattenedCategories(currentCategory);
+    const editedCategory = await prisma.$transaction([
+      prisma.category.update({
+        where: { id: categoryId, userId },
+        data: {
+          ...allowedFields,
+          depth: newDepth,
+          parent: { connect: { id: parentId } },
+        },
+      }),
+      ...descendants
+        .filter((cat) => cat.id !== categoryId)
+        .map((cat) =>
+          prisma.category.update({
+            where: { id: cat.id },
+            data: { depth: cat.depth + depthDelta },
+          }),
+        ),
+    ]);
+
+    return editedCategory[0];
   }
 
   const editedCategory = await prisma.category.update({
     where: { id: categoryId, userId },
     data: {
       ...allowedFields,
-      ...(parentId ? { parent: { connect: { id: parentId } } } : {}),
     },
   });
 
@@ -337,13 +362,15 @@ export const getCategory = async ({
   prisma: PrismaClient;
   userId: string;
   categoryId: string;
-  // Should add all children to be able to calculat ethe children depth
+  // Should add all children to be able to calculate the children depth
   withChildren?: boolean;
 }) => {
   try {
     const category = await prisma.category.findUnique({
       where: { id: categoryId, userId },
-      include: withChildren ? getCategoryInclude(1) : {},
+      include: withChildren
+        ? getCategoryInclude(CATEGORY_CONFIG.MAX_NESTING_DEPTH)
+        : {},
     });
 
     return category;
