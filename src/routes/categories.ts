@@ -2,9 +2,9 @@ import { FastifyInstance } from "fastify";
 import {
   createCategory,
   deleteCategory,
+  editCategory,
   getCategories,
   getCategoryById,
-  editCategory,
 } from "../controllers/categories";
 
 const getCategoriesOpts = {
@@ -49,6 +49,8 @@ const createCategoryOpts = {
         description: { $ref: "categorySchema#/properties/description" },
         color: { $ref: "categorySchema#/properties/color" },
         icon: { $ref: "categorySchema#/properties/icon" },
+        budgetAmount: { $ref: "categorySchema#/properties/budgetAmount" },
+        budgetPeriod: { $ref: "categorySchema#/properties/budgetPeriod" },
         parentId: { $ref: "categorySchema#/properties/parentId" },
       },
     },
@@ -91,6 +93,8 @@ const editCategoryOpts = {
         color: { $ref: "categorySchema#/properties/color" },
         icon: { $ref: "categorySchema#/properties/icon" },
         parentId: { $ref: "categorySchema#/properties/parentId" },
+        budgetAmount: { $ref: "categorySchema#/properties/budgetAmount" },
+        budgetPeriod: { $ref: "categorySchema#/properties/budgetPeriod" },
       },
     },
     params: {

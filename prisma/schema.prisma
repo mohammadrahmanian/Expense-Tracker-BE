@@ -39,6 +39,9 @@ model Category {
   userId               String
   user                 User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
   RecurringTransaction RecurringTransaction[]
+  budgetAmount         Decimal?               @db.Decimal(10, 2)
+  budgetPeriod         BudgetPeriod?
+  depth                Int                    @default(0)
 
   @@unique([name, userId])
   @@index([userId])
@@ -99,6 +102,11 @@ enum Type {
 enum RecurrenceFrequency {
   DAILY
   WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum BudgetPeriod {
   MONTHLY
   YEARLY
 }
