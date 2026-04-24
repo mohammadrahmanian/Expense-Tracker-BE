@@ -198,66 +198,58 @@ export const createCategory = async ({
     "name" | "type" | "icon" | "color" | "budgetAmount" | "budgetPeriod"
   >;
 }) => {
-  try {
-    if (
-      (allowedFields.budgetAmount && !allowedFields.budgetPeriod) ||
-      (!allowedFields.budgetAmount && allowedFields.budgetPeriod)
-    ) {
-      throw new Error(
-        "budgetAmount and budgetPeriod must be provided together or not at all",
-        { cause: "VALIDATION_ERROR" },
-      );
-    }
-
-    let depth = 0;
-
-    if (parentId) {
-      // Checks for valid parent category, circular references, and also retrieves the parent's depth to calculate the new category's depth
-      const parentValidityResult = await checkIfCanBeValidParent({
-        parentId,
-        categoryType: allowedFields.type,
-        userId,
-        prisma,
-      });
-      if (!parentValidityResult.valid) {
-        throw new Error(parentValidityResult.message, {
-          cause: "VALIDATION_ERROR",
-        });
-      }
-
-      const parentDepth = parentValidityResult.parentCategory.depth;
-      depth = parentDepth + 1;
-
-      if (depth > CATEGORY_CONFIG.MAX_NESTING_DEPTH) {
-        throw new Error("Depth exceeds maximum allowed", {
-          cause: "VALIDATION_ERROR",
-        });
-      }
-    }
-
-    const category = await prisma.category.create({
-      data: {
-        ...allowedFields,
-        depth,
-        user: {
-          connect: { id: userId },
-        },
-        parent: parentId
-          ? {
-              connect: { id: parentId },
-            }
-          : undefined,
-      },
-    });
-
-    return category;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (error instanceof Error && error.cause !== "VALIDATION_ERROR") {
-      captureException(error);
-    }
-    throw new Error(`Failed to create category: ${message}`);
+  if (
+    (allowedFields.budgetAmount && !allowedFields.budgetPeriod) ||
+    (!allowedFields.budgetAmount && allowedFields.budgetPeriod)
+  ) {
+    throw new Error(
+      "budgetAmount and budgetPeriod must be provided together or not at all",
+      { cause: "VALIDATION_ERROR" },
+    );
   }
+
+  let depth = 0;
+
+  if (parentId) {
+    // Checks for valid parent category, circular references, and also retrieves the parent's depth to calculate the new category's depth
+    const parentValidityResult = await checkIfCanBeValidParent({
+      parentId,
+      categoryType: allowedFields.type,
+      userId,
+      prisma,
+    });
+    if (!parentValidityResult.valid) {
+      throw new Error(parentValidityResult.message, {
+        cause: "VALIDATION_ERROR",
+      });
+    }
+
+    const parentDepth = parentValidityResult.parentCategory.depth;
+    depth = parentDepth + 1;
+
+    if (depth > CATEGORY_CONFIG.MAX_NESTING_DEPTH) {
+      throw new Error("Depth exceeds maximum allowed", {
+        cause: "VALIDATION_ERROR",
+      });
+    }
+  }
+
+  const category = await prisma.category.create({
+    data: {
+      ...allowedFields,
+      depth,
+      user: {
+        connect: { id: userId },
+      },
+      parent: parentId
+        ? {
+            connect: { id: parentId },
+          }
+        : undefined,
+    },
+  });
+
+  return category;
 };
 
 export const editCategory = async ({
@@ -278,60 +270,52 @@ export const editCategory = async ({
     >
   >;
 }) => {
-  try {
-    if (parentId) {
-      // Get current category to determine type if not provided in update
-      const currentCategory = await getCategory({
-        categoryId,
-        userId,
-        prisma,
-        withChildren: true,
-      });
-
-      if (currentCategory === null) {
-        return null;
-      }
-
-      const parentValidityResult = await checkIfCanBeValidParent({
-        userId,
-        parentId,
-        categoryType: (allowedFields.type as Type) || currentCategory.type,
-        prisma,
-        categoryId,
-      });
-
-      if (!parentValidityResult.valid) {
-        throw new Error(parentValidityResult.message, {
-          cause: "VALIDATION_ERROR",
-        });
-      }
-
-      const parentDepth = parentValidityResult.parentCategory.depth;
-      const childrenDepth = getChildrenDepth(currentCategory);
-
-      if (childrenDepth + parentDepth > CATEGORY_CONFIG.MAX_NESTING_DEPTH) {
-        throw new Error("Depth exceeds maximum allowed", {
-          cause: "VALIDATION_ERROR",
-        });
-      }
-    }
-
-    const editedCategory = await prisma.category.update({
-      where: { id: categoryId, userId },
-      data: {
-        ...allowedFields,
-        ...(parentId ? { parent: { connect: { id: parentId } } } : {}),
-      },
+  if (parentId) {
+    // Get current category to determine type if not provided in update
+    const currentCategory = await getCategory({
+      categoryId,
+      userId,
+      prisma,
+      withChildren: true,
     });
 
-    return editedCategory;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (error instanceof Error && error.cause !== "VALIDATION_ERROR") {
-      captureException(error);
+    if (currentCategory === null) {
+      return null;
     }
-    throw new Error(`Failed to edit category: ${message}`);
+
+    const parentValidityResult = await checkIfCanBeValidParent({
+      userId,
+      parentId,
+      categoryType: (allowedFields.type as Type) || currentCategory.type,
+      prisma,
+      categoryId,
+    });
+
+    if (!parentValidityResult.valid) {
+      throw new Error(parentValidityResult.message, {
+        cause: "VALIDATION_ERROR",
+      });
+    }
+
+    const parentDepth = parentValidityResult.parentCategory.depth;
+    const childrenDepth = getChildrenDepth(currentCategory);
+
+    if (childrenDepth + parentDepth > CATEGORY_CONFIG.MAX_NESTING_DEPTH) {
+      throw new Error("Depth exceeds maximum allowed", {
+        cause: "VALIDATION_ERROR",
+      });
+    }
   }
+
+  const editedCategory = await prisma.category.update({
+    where: { id: categoryId, userId },
+    data: {
+      ...allowedFields,
+      ...(parentId ? { parent: { connect: { id: parentId } } } : {}),
+    },
+  });
+
+  return editedCategory;
 };
 
 export const getCategory = async ({
