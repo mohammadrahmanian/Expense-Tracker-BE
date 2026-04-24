@@ -270,6 +270,16 @@ export const editCategory = async ({
     >
   >;
 }) => {
+  if (
+    (allowedFields.budgetAmount && !allowedFields.budgetPeriod) ||
+    (!allowedFields.budgetAmount && allowedFields.budgetPeriod)
+  ) {
+    throw new Error(
+      "budgetAmount and budgetPeriod must be provided together or not at all",
+      { cause: "VALIDATION_ERROR" },
+    );
+  }
+  
   if (parentId) {
     // Get current category to determine type if not provided in update
     const currentCategory = await getCategory({
