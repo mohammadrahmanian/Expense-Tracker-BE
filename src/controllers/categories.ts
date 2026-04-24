@@ -170,7 +170,7 @@ export const editCategory = async (
     });
 
     if (!editedCategory) {
-      throw new Error("Failed to edit category");
+      return reply.status(404).send({ error: "Category not found" });
     }
 
     return reply.send(editedCategory);
