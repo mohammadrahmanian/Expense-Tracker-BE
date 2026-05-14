@@ -198,14 +198,30 @@ export const createCategory = async ({
     "name" | "type" | "icon" | "color" | "budgetAmount" | "budgetPeriod"
   >;
 }) => {
+  const hasBudgetAmount =
+    allowedFields.budgetAmount !== undefined &&
+    allowedFields.budgetAmount !== null;
+  const hasBudgetPeriod =
+    allowedFields.budgetPeriod !== undefined &&
+    allowedFields.budgetPeriod !== null;
   if (
-    (allowedFields.budgetAmount && !allowedFields.budgetPeriod) ||
-    (!allowedFields.budgetAmount && allowedFields.budgetPeriod)
+    (hasBudgetAmount && !hasBudgetPeriod) ||
+    (!hasBudgetAmount && hasBudgetPeriod)
   ) {
     throw new Error(
       "budgetAmount and budgetPeriod must be provided together or not at all",
       { cause: "VALIDATION_ERROR" },
     );
+  }
+
+  if (
+    allowedFields.color !== undefined &&
+    allowedFields.color !== null &&
+    !validateColorString(allowedFields.color)
+  ) {
+    throw new Error("color must be a valid hex color string", {
+      cause: "VALIDATION_ERROR",
+    });
   }
 
   let depth = 0;
@@ -270,14 +286,30 @@ export const editCategory = async ({
     >
   >;
 }) => {
+  const hasBudgetAmount =
+    allowedFields.budgetAmount !== undefined &&
+    allowedFields.budgetAmount !== null;
+  const hasBudgetPeriod =
+    allowedFields.budgetPeriod !== undefined &&
+    allowedFields.budgetPeriod !== null;
   if (
-    (allowedFields.budgetAmount && !allowedFields.budgetPeriod) ||
-    (!allowedFields.budgetAmount && allowedFields.budgetPeriod)
+    (hasBudgetAmount && !hasBudgetPeriod) ||
+    (!hasBudgetAmount && hasBudgetPeriod)
   ) {
     throw new Error(
       "budgetAmount and budgetPeriod must be provided together or not at all",
       { cause: "VALIDATION_ERROR" },
     );
+  }
+
+  if (
+    allowedFields.color !== undefined &&
+    allowedFields.color !== null &&
+    !validateColorString(allowedFields.color)
+  ) {
+    throw new Error("color must be a valid hex color string", {
+      cause: "VALIDATION_ERROR",
+    });
   }
 
   if (parentId) {
