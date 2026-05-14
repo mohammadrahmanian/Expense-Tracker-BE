@@ -53,8 +53,18 @@ if (!process.env.CORS_ORIGIN) {
   throw new Error("CORS_ORIGIN is not defined in environment variables");
 }
 
+const parseCorsOrigin = (value: string): string | string[] => {
+  if (value.includes(",")) {
+    return value
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0);
+  }
+  return value;
+};
+
 fastify.register(FastifyCors, {
-  origin: process.env.CORS_ORIGIN,
+  origin: parseCorsOrigin(process.env.CORS_ORIGIN),
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 });
