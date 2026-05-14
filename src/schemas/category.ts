@@ -46,7 +46,7 @@ export const categorySchema = {
     },
     budgetPeriod: {
       type: "string",
-      enum: ["MONTHLY", "YEARLY"],
+      enum: ["MONTHLY", "YEARLY", null],
       description: "Budget period for the category",
       nullable: true,
     },
