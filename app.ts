@@ -53,8 +53,25 @@ if (!process.env.CORS_ORIGIN) {
   throw new Error("CORS_ORIGIN is not defined in environment variables");
 }
 
+const parseCorsOrigin = (value: string): string | string[] | undefined => {
+  const trimmedValue = value.trim();
+  if (trimmedValue.includes(",")) {
+    const origins = trimmedValue
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0);
+    return origins.length > 0 ? origins : undefined;
+  }
+  return trimmedValue.length > 0 ? trimmedValue : undefined;
+};
+
+const corsOrigin = parseCorsOrigin(process.env.CORS_ORIGIN);
+if (!corsOrigin) {
+  throw new Error("CORS_ORIGIN is empty or contains only whitespace");
+}
+
 fastify.register(FastifyCors, {
-  origin: process.env.CORS_ORIGIN,
+  origin: corsOrigin,
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 });
