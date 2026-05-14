@@ -39,6 +39,17 @@ export const categorySchema = {
       description: "ID of the parent category, if any",
       nullable: true,
     },
+    budgetAmount: {
+      type: "number",
+      description: "Budget amount set for the category",
+      nullable: true,
+    },
+    budgetPeriod: {
+      type: "string",
+      enum: ["MONTHLY", "YEARLY"],
+      description: "Budget period for the category",
+      nullable: true,
+    },
     createdAt: {
       type: "string",
       format: "date-time",
