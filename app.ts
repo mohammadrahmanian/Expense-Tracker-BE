@@ -53,13 +53,23 @@ if (!process.env.CORS_ORIGIN) {
   throw new Error("CORS_ORIGIN is not defined in environment variables");
 }
 
-const parseCorsOrigin = (value: string): string | string[] | undefined => {
+const parseCorsOrigin = (
+  value: string
+): string | (string | RegExp)[] | RegExp | undefined => {
   const trimmedValue = value.trim();
+  const regexMatch = trimmedValue.match(/^\/(.+)\/([gimsuy]*)$/);
+  if (regexMatch) {
+    return new RegExp(regexMatch[1], regexMatch[2] || undefined);
+  }
   if (trimmedValue.includes(",")) {
     const origins = trimmedValue
       .split(",")
       .map((origin) => origin.trim())
-      .filter((origin) => origin.length > 0);
+      .filter((origin) => origin.length > 0)
+      .map((origin) => {
+        const match = origin.match(/^\/(.+)\/([gimsuy]*)$/);
+        return match ? new RegExp(match[1], match[2] || undefined) : origin;
+      });
     return origins.length > 0 ? origins : undefined;
   }
   return trimmedValue.length > 0 ? trimmedValue : undefined;
