@@ -30,4 +30,5 @@ jobs:
             git pull origin staging
             npm ci
             npm run build
+            npx prisma migrate deploy
             pm2 reload expensio-staging

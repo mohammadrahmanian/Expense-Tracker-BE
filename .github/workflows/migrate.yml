@@ -1,11 +1,6 @@
 name: "Database Migrations"
 on:
-  push:
-    paths:
-      - prisma/migrations/**
-    branches:
-      - main
-      - staging
+  workflow_dispatch:
 jobs:
   migrate:
     runs-on: ubuntu-latest
