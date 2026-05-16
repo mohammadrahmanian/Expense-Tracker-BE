@@ -10,3 +10,5 @@ fly-db-credentials.txt
 db_backups
 
 dist
+
+doc/private

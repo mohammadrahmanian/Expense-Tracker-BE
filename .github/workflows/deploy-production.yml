@@ -31,4 +31,4 @@ jobs:
             npm ci
             npm run build
             npx prisma migrate deploy
-            pm2 reload expensio-prod
+            pm2 reload "${{ secrets.ECOSYSTEM_PATH }}" --update-env --only expensio-prod

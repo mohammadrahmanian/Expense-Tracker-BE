@@ -14,12 +14,20 @@ import {
 } from "../services/users";
 
 const TOKEN_COOKIE_NAME = "token";
+
+// staging/production serve the API over HTTPS to cross-site frontends (e.g.
+// Vercel previews), which requires SameSite=None; Secure. Local dev runs over
+// plain HTTP where None;Secure cookies are rejected, so it falls back to Lax.
+const isDeployedEnv =
+  process.env.NODE_ENV === "production" ||
+  process.env.NODE_ENV === "staging";
+
 const TOKEN_COOKIE_SETTINGS: CookieSerializeOptions = {
   httpOnly: true,
-  sameSite: "lax",
+  sameSite: isDeployedEnv ? "none" : "lax",
   maxAge: 7 * 24 * 60 * 60, // 7 days
   path: "/",
-  secure: process.env.NODE_ENV === "production",
+  secure: isDeployedEnv,
 };
 
 export const createUser = async (
@@ -202,6 +210,6 @@ export const getUser = async (req: FastifyRequest, reply: FastifyReply) => {
 };
 
 export const logoutUser = async (_: FastifyRequest, reply: FastifyReply) => {
-  reply.clearCookie(TOKEN_COOKIE_NAME, { path: "/" });
+  reply.clearCookie(TOKEN_COOKIE_NAME, TOKEN_COOKIE_SETTINGS);
   return reply.send({ message: "Logged out successfully" });
 }
