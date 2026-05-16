@@ -59,7 +59,8 @@ const parseCorsOrigin = (
   const trimmedValue = value.trim();
   const regexMatch = trimmedValue.match(/^\/(.+)\/([gimsuy]*)$/);
   if (regexMatch) {
-    return new RegExp(regexMatch[1], regexMatch[2] || undefined);
+    const sanitizedFlags = regexMatch[2]?.replace(/[gy]/g, '');
+    return new RegExp(regexMatch[1], sanitizedFlags || undefined);
   }
   if (trimmedValue.includes(",")) {
     const origins = trimmedValue
@@ -68,7 +69,11 @@ const parseCorsOrigin = (
       .filter((origin) => origin.length > 0)
       .map((origin) => {
         const match = origin.match(/^\/(.+)\/([gimsuy]*)$/);
-        return match ? new RegExp(match[1], match[2] || undefined) : origin;
+        if (match) {
+          const sanitizedFlags = match[2]?.replace(/[gy]/g, '');
+          return new RegExp(match[1], sanitizedFlags || undefined);
+        }
+        return origin;
       });
     return origins.length > 0 ? origins : undefined;
   }
