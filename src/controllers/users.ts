@@ -15,16 +15,17 @@ import {
 
 const TOKEN_COOKIE_NAME = "token";
 
-// staging/production serve the API over HTTPS to cross-site frontends (e.g.
-// Vercel previews), which requires SameSite=None; Secure. Local dev runs over
-// plain HTTP where None;Secure cookies are rejected, so it falls back to Lax.
+// SameSite=Lax is intentional: the app frontends are same-site with the API,
+// so Lax works while keeping CSRF protection. SameSite=None is deliberately
+// avoided — it would attach this cookie to cross-site requests and open CSRF.
+// `secure` is enabled on HTTPS deployments and disabled for local HTTP dev.
 const isDeployedEnv =
   process.env.NODE_ENV === "production" ||
   process.env.NODE_ENV === "staging";
 
 const TOKEN_COOKIE_SETTINGS: CookieSerializeOptions = {
   httpOnly: true,
-  sameSite: isDeployedEnv ? "none" : "lax",
+  sameSite: "lax",
   maxAge: 7 * 24 * 60 * 60, // 7 days
   path: "/",
   secure: isDeployedEnv,
