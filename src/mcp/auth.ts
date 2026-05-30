@@ -9,6 +9,13 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
 type EmailCacheEntry = { email: string; cachedAt: number };
 const emailCache = new Map<string, EmailCacheEntry>();
 
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of emailCache) {
+    if (now - entry.cachedAt >= CACHE_TTL_MS) emailCache.delete(key);
+  }
+}, CACHE_TTL_MS).unref();
+
 export type ToolErrorResult = {
   isError: true;
   content: Array<{ type: "text"; text: string }>;
@@ -38,10 +45,12 @@ export function requireScope(
 
 function extractEmailFromRequest(request: FastifyRequest): string | null {
   const auth = request.headers.authorization;
-  if (typeof auth !== "string" || !auth.startsWith("Bearer ")) return null;
+  if (typeof auth !== "string") return null;
+  const parts = auth.split(" ");
+  if (parts.length < 2 || parts[0].toLowerCase() !== "bearer") return null;
   // The token is already verified by @platformatic/mcp's authorization layer
   // (JWKS + audience). We only need to decode for the email claim here.
-  const decoded = jwt.decode(auth.slice("Bearer ".length));
+  const decoded = jwt.decode(parts[1]);
   if (!decoded || typeof decoded !== "object") return null;
   const claims = decoded as Record<string, unknown>;
   const value = claims[EMAIL_CLAIM_NAMESPACE] ?? claims["email"];
@@ -65,8 +74,12 @@ export async function resolveMcpUser(
 
   if (sessionId) {
     const cached = emailCache.get(sessionId);
-    if (cached && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
-      email = cached.email;
+    if (cached) {
+      if (Date.now() - cached.cachedAt < CACHE_TTL_MS) {
+        email = cached.email;
+      } else {
+        emailCache.delete(sessionId);
+      }
     }
   }
 

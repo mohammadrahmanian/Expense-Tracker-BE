@@ -4,9 +4,8 @@ export const getDashboardStats = async (
   prisma: PrismaClient,
   userId: string
 ) => {
-  const firstOfTheMonth = new Date();
-  firstOfTheMonth.setDate(1);
-  firstOfTheMonth.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const firstOfTheMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
   const totalIncomeResult = await prisma.transaction.aggregate({
     where: { userId, type: "INCOME" },
