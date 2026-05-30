@@ -13,6 +13,9 @@ export const getUsers = async (prisma: PrismaClient) => {
   }
 };
 
+export const normalizeEmail = (email: string): string =>
+  email.trim().toLowerCase();
+
 export const createNewUser = async (
   prisma: PrismaClient,
   email: string,
@@ -29,7 +32,7 @@ export const createNewUser = async (
 
   try {
     const newUser = await prisma.user.create({
-      data: { email, password: hashedPassword },
+      data: { email: normalizeEmail(email), password: hashedPassword },
     });
 
     return newUser;
@@ -61,7 +64,9 @@ export const getUserByEmail = async (
   email: string,
 ): Promise<User | null> => {
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email: normalizeEmail(email) },
+    });
     return user;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

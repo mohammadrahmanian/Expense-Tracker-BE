@@ -1,0 +1,81 @@
+import type { FastifyInstance } from "fastify";
+
+import {
+  createUserTransaction,
+  validateUserTransactionType,
+} from "../../services/transactions";
+
+import { requireScope, resolveMcpUser, ToolErrorResult } from "../auth";
+import { serializeTransaction } from "../serialize";
+
+const WRITE_SCOPE = "transaction:write";
+
+const textResult = (data: unknown) => ({
+  content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
+});
+
+const toolError = (text: string): ToolErrorResult => ({
+  isError: true,
+  content: [{ type: "text", text }],
+});
+
+export function registerWriteTools(fastify: FastifyInstance) {
+  fastify.mcpAddTool(
+    {
+      name: "log_transaction",
+      description:
+        "Create a new transaction (INCOME or EXPENSE) for the user. The agent should call list_categories first to obtain a valid categoryId whose type matches.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          amount: { type: "number", exclusiveMinimum: 0 },
+          title: { type: "string", minLength: 1, maxLength: 200 },
+          type: { type: "string", enum: ["INCOME", "EXPENSE"] },
+          categoryId: { type: "string", minLength: 1 },
+          date: { type: "string", format: "date-time" },
+          description: { type: "string", maxLength: 1000 },
+        },
+        required: ["amount", "title", "type", "categoryId"],
+        additionalProperties: false,
+      },
+    },
+    async (params, ctx) => {
+      const scopeError = requireScope(ctx.authContext, WRITE_SCOPE);
+      if (scopeError) return scopeError;
+      const r = await resolveMcpUser(fastify, ctx.request, ctx.sessionId);
+      if ("error" in r) return r.error;
+
+      try {
+        await validateUserTransactionType({
+          transactionType: params.type,
+          categoryId: params.categoryId,
+          userId: r.user.id,
+          prisma: fastify.prisma,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "validation failed";
+        return toolError(`Invalid category for type ${params.type}: ${message}`);
+      }
+
+      try {
+        const tx = await createUserTransaction({
+          prisma: fastify.prisma,
+          userId: r.user.id,
+          categoryId: params.categoryId,
+          transaction: {
+            amount: params.amount,
+            title: params.title,
+            type: params.type,
+            description: params.description ?? null,
+            date: params.date ? new Date(params.date) : new Date(),
+          },
+        });
+        return textResult(serializeTransaction(tx as never));
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "create failed";
+        fastify.log.error({ err }, "MCP log_transaction failed");
+        return toolError(`Failed to create transaction: ${message}`);
+      }
+    }
+  );
+}
