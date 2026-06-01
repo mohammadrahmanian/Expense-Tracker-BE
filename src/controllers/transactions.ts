@@ -2,6 +2,7 @@ import { RecurrenceFrequency, Transaction, Type } from "@prisma/client";
 
 import { FastifyReply, FastifyRequest, RouteHandlerMethod } from "fastify";
 
+import { captureException } from "@sentry/node";
 import { importCsvRecords } from "../services/data-exchange";
 import { createUserRecurringTransaction } from "../services/recurring-transactions";
 import {
@@ -9,7 +10,6 @@ import {
   getUserTransactions,
   validateUserTransactionType,
 } from "../services/transactions";
-import { captureException } from "@sentry/node";
 
 type RequestParams = {
   id: string;
@@ -143,6 +143,7 @@ export const createTransaction = async (
     type,
     description,
     date,
+    idempotencyKey: null,
   };
 
   try {
@@ -163,7 +164,7 @@ export const createTransaction = async (
 
   if (isRecurring) {
     try {
-      const { date, ...recurringTransactionAllowedFields } = allowedFields;
+      const { date, idempotencyKey: _ik, ...recurringTransactionAllowedFields } = allowedFields;
       const transaction = await prisma.$transaction(async (tx) => {
         await createUserRecurringTransaction({
           recurringTransaction: {

@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 
+import { captureException } from "@sentry/node";
 import { FastifyBaseLogger } from "fastify";
 import {
   getAllActiveRecurringTransactions,
@@ -7,7 +8,6 @@ import {
 } from "../services/recurring-transactions";
 import { createUserTransaction } from "../services/transactions";
 import { calculateNextOccurrenceOnce } from "../utils/helpers";
-import { captureException } from "@sentry/node";
 
 export const createTransactionFromRecurringTransaction = async ({
   prisma,
@@ -48,8 +48,9 @@ export const createTransactionFromRecurringTransaction = async ({
             amount: recurringTransaction.amount,
             date: recurringTransaction.nextOccurrence,
             title: recurringTransaction.title,
-            description: recurringTransaction.description || undefined,
+            description: recurringTransaction.description,
             type: recurringTransaction.type,
+            idempotencyKey: null,
           },
           userId: recurringTransaction.userId,
           categoryId: recurringTransaction.categoryId,

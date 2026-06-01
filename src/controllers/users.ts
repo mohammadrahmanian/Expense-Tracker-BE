@@ -14,12 +14,21 @@ import {
 } from "../services/users";
 
 const TOKEN_COOKIE_NAME = "token";
+
+// SameSite=Lax is intentional: the app frontends are same-site with the API,
+// so Lax works while keeping CSRF protection. SameSite=None is deliberately
+// avoided — it would attach this cookie to cross-site requests and open CSRF.
+// `secure` is enabled on HTTPS deployments and disabled for local HTTP dev.
+const isDeployedEnv =
+  process.env.NODE_ENV === "production" ||
+  process.env.NODE_ENV === "staging";
+
 const TOKEN_COOKIE_SETTINGS: CookieSerializeOptions = {
   httpOnly: true,
   sameSite: "lax",
   maxAge: 7 * 24 * 60 * 60, // 7 days
   path: "/",
-  secure: process.env.NODE_ENV === "production",
+  secure: isDeployedEnv,
 };
 
 export const createUser = async (
@@ -202,6 +211,6 @@ export const getUser = async (req: FastifyRequest, reply: FastifyReply) => {
 };
 
 export const logoutUser = async (_: FastifyRequest, reply: FastifyReply) => {
-  reply.clearCookie(TOKEN_COOKIE_NAME, { path: "/" });
+  reply.clearCookie(TOKEN_COOKIE_NAME, TOKEN_COOKIE_SETTINGS);
   return reply.send({ message: "Logged out successfully" });
 }

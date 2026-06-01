@@ -13,6 +13,8 @@ import FastifyCron from "fastify-cron";
 import { verifyTokenPlugin } from "./src/plugins/auth";
 import { prismaPlugin } from "./src/plugins/prisma";
 
+import { mcpModule } from "./src/mcp";
+
 import { categorySchema } from "./src/schemas/category";
 import { errorSchema } from "./src/schemas/error";
 import { transactionSchema } from "./src/schemas/transaction";
@@ -54,12 +56,12 @@ if (!process.env.CORS_ORIGIN) {
 }
 
 const parseCorsOrigin = (
-  value: string
+  value: string,
 ): string | (string | RegExp)[] | RegExp | undefined => {
   const trimmedValue = value.trim();
   const regexMatch = trimmedValue.match(/^\/(.+)\/([gimsuy]*)$/);
   if (regexMatch) {
-    const sanitizedFlags = regexMatch[2]?.replace(/[gy]/g, '');
+    const sanitizedFlags = regexMatch[2]?.replace(/[gy]/g, "");
     return new RegExp(regexMatch[1], sanitizedFlags || undefined);
   }
   if (trimmedValue.includes(",")) {
@@ -70,7 +72,7 @@ const parseCorsOrigin = (
       .map((origin) => {
         const match = origin.match(/^\/(.+)\/([gimsuy]*)$/);
         if (match) {
-          const sanitizedFlags = match[2]?.replace(/[gy]/g, '');
+          const sanitizedFlags = match[2]?.replace(/[gy]/g, "");
           return new RegExp(match[1], sanitizedFlags || undefined);
         }
         return origin;
@@ -89,6 +91,10 @@ fastify.register(FastifyCors, {
   origin: corsOrigin,
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
+  // Mcp-Session-Id is set by @platformatic/mcp on responses and echoed back
+  // by clients on subsequent requests; Last-Event-ID is used for SSE resume.
+  allowedHeaders: ["Content-Type", "Authorization", "Mcp-Session-Id", "Last-Event-ID"],
+  exposedHeaders: ["Mcp-Session-Id"],
 });
 
 fastify.register(FastifyMultipart, {
@@ -118,6 +124,8 @@ fastify.register(categoriesRoutes, { prefix: API_PREFIX });
 fastify.register(dashboardRoutes, { prefix: API_PREFIX });
 fastify.register(usersRoutes, { prefix: API_PREFIX });
 
+fastify.register(mcpModule);
+
 fastify.register(FastifyCron, {
   jobs: [
     {
@@ -144,7 +152,7 @@ const start = async () => {
     await fastify.listen({ host: HOST, port });
     if (process.env.NODE_ENV === "production") {
       fastify.log.info(`Starting cron jobs...`);
-      fastify.cron.getJobByName("recurring transactions").start();
+      fastify.cron.getJobByName("recurring transactions")?.start();
     }
   } catch (error) {
     fastify.log.error(error);
