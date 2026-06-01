@@ -50,19 +50,21 @@ model Category {
 }
 
 model Transaction {
-  id          String   @id @default(cuid())
-  amount      Decimal  @db.Decimal(10, 2)
-  title       String
-  type        Type
-  description String?
-  date        DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Restrict)
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  id             String   @id @default(cuid())
+  amount         Decimal  @db.Decimal(10, 2)
+  title          String
+  type           Type
+  description    String?
+  date           DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  categoryId     String
+  category       Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  idempotencyKey String?
 
+  @@unique([userId, idempotencyKey])
   @@index([userId])
   @@index([categoryId])
   @@index([date])

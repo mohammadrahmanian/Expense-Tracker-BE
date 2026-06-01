@@ -143,6 +143,7 @@ export const createTransaction = async (
     type,
     description,
     date,
+    idempotencyKey: null,
   };
 
   try {

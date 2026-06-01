@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { Prisma } from "@prisma/client";
 
 import {
   createUserTransaction,
@@ -34,6 +35,7 @@ export function registerWriteTools(fastify: FastifyInstance) {
           categoryId: { type: "string", minLength: 1 },
           date: { type: "string", format: "date-time" },
           description: { type: "string", maxLength: 1000 },
+          idempotencyKey: { type: "string", minLength: 1, maxLength: 128 },
         },
         required: ["amount", "title", "type", "categoryId"],
         additionalProperties: false,
@@ -44,6 +46,13 @@ export function registerWriteTools(fastify: FastifyInstance) {
       if (scopeError) return scopeError;
       const r = await resolveMcpUser(fastify, ctx.request, ctx.sessionId);
       if ("error" in r) return r.error;
+
+      if (params.idempotencyKey) {
+        const existing = await fastify.prisma.transaction.findFirst({
+          where: { userId: r.user.id, idempotencyKey: params.idempotencyKey },
+        });
+        if (existing) return textResult(serializeTransaction(existing as never));
+      }
 
       try {
         await validateUserTransactionType({
@@ -68,10 +77,21 @@ export function registerWriteTools(fastify: FastifyInstance) {
             type: params.type,
             description: params.description ?? null,
             date: params.date ? new Date(params.date) : new Date(),
+            idempotencyKey: params.idempotencyKey ?? null,
           },
         });
         return textResult(serializeTransaction(tx as never));
       } catch (err) {
+        if (
+          params.idempotencyKey &&
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === "P2002"
+        ) {
+          const existing = await fastify.prisma.transaction.findFirst({
+            where: { userId: r.user.id, idempotencyKey: params.idempotencyKey },
+          });
+          if (existing) return textResult(serializeTransaction(existing as never));
+        }
         const message = err instanceof Error ? err.message : "create failed";
         fastify.log.error({ err }, "MCP log_transaction failed");
         return toolError(`Failed to create transaction: ${message}`);
