@@ -26,23 +26,6 @@ const toolError = (text: string): ToolErrorResult => ({
   content: [{ type: "text", text }],
 });
 
-export type AuthorizationContext = {
-  userId?: string;
-  scopes?: string[];
-  clientId?: string;
-  audience?: string[] | string;
-};
-
-export function requireScope(
-  authContext: AuthorizationContext | undefined,
-  scope: string
-): ToolErrorResult | null {
-  const scopes = authContext?.scopes ?? [];
-  return scopes.includes(scope)
-    ? null
-    : toolError(`Missing required scope: ${scope}`);
-}
-
 function extractEmailFromRequest(request: FastifyRequest): string | null {
   const auth = request.headers.authorization;
   if (typeof auth !== "string") return null;

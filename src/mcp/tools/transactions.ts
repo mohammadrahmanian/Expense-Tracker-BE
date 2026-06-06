@@ -6,10 +6,8 @@ import {
   validateUserTransactionType,
 } from "../../services/transactions";
 
-import { requireScope, resolveMcpUser, ToolErrorResult } from "../auth";
+import { resolveMcpUser, ToolErrorResult } from "../auth";
 import { serializeTransaction } from "../serialize";
-
-const WRITE_SCOPE = "transaction:write";
 
 const textResult = (data: unknown) => ({
   content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
@@ -42,8 +40,6 @@ export function registerWriteTools(fastify: FastifyInstance) {
       },
     },
     async (params, ctx) => {
-      const scopeError = requireScope(ctx.authContext, WRITE_SCOPE);
-      if (scopeError) return scopeError;
       const r = await resolveMcpUser(fastify, ctx.request, ctx.sessionId);
       if ("error" in r) return r.error;
 
