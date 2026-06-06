@@ -5,14 +5,12 @@ import { getUserTransactions } from "../../services/transactions";
 import { getUserDashboardReports } from "../../services/reports";
 import { getCategoryInclude } from "../../services/categories";
 
-import { requireScope, resolveMcpUser } from "../auth";
+import { resolveMcpUser } from "../auth";
 import {
   serializeCategory,
   serializeTransaction,
   serializeTransactionList,
 } from "../serialize";
-
-const READ_SCOPE = "transaction:read";
 
 const textResult = (data: unknown) => ({
   content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
@@ -31,8 +29,6 @@ export function registerReadTools(fastify: FastifyInstance) {
       },
     },
     async (_params, ctx) => {
-      const scopeError = requireScope(ctx.authContext, READ_SCOPE);
-      if (scopeError) return scopeError;
       const r = await resolveMcpUser(fastify, ctx.request, ctx.sessionId);
       if ("error" in r) return r.error;
       const stats = await getDashboardStats(fastify.prisma, r.user.id);
@@ -62,8 +58,6 @@ export function registerReadTools(fastify: FastifyInstance) {
       },
     },
     async (params, ctx) => {
-      const scopeError = requireScope(ctx.authContext, READ_SCOPE);
-      if (scopeError) return scopeError;
       const r = await resolveMcpUser(fastify, ctx.request, ctx.sessionId);
       if ("error" in r) return r.error;
       const result = await getUserTransactions({
@@ -103,8 +97,6 @@ export function registerReadTools(fastify: FastifyInstance) {
       },
     },
     async (params, ctx) => {
-      const scopeError = requireScope(ctx.authContext, READ_SCOPE);
-      if (scopeError) return scopeError;
       const r = await resolveMcpUser(fastify, ctx.request, ctx.sessionId);
       if ("error" in r) return r.error;
       const result = await getUserTransactions({
@@ -138,8 +130,6 @@ export function registerReadTools(fastify: FastifyInstance) {
       },
     },
     async (params, ctx) => {
-      const scopeError = requireScope(ctx.authContext, READ_SCOPE);
-      if (scopeError) return scopeError;
       const r = await resolveMcpUser(fastify, ctx.request, ctx.sessionId);
       if ("error" in r) return r.error;
       const reports = await getUserDashboardReports(
@@ -175,8 +165,6 @@ export function registerReadTools(fastify: FastifyInstance) {
       },
     },
     async (params, ctx) => {
-      const scopeError = requireScope(ctx.authContext, READ_SCOPE);
-      if (scopeError) return scopeError;
       const r = await resolveMcpUser(fastify, ctx.request, ctx.sessionId);
       if ("error" in r) return r.error;
       const reports = await getUserDashboardReports(
@@ -207,8 +195,6 @@ export function registerReadTools(fastify: FastifyInstance) {
       },
     },
     async (params, ctx) => {
-      const scopeError = requireScope(ctx.authContext, READ_SCOPE);
-      if (scopeError) return scopeError;
       const r = await resolveMcpUser(fastify, ctx.request, ctx.sessionId);
       if ("error" in r) return r.error;
       const categories = await fastify.prisma.category.findMany({

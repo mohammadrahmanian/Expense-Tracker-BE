@@ -109,6 +109,12 @@ export const createUserTransaction = async ({
 
     return createdTransaction;
   } catch (error) {
+    // Preserve known Prisma errors (e.g. P2002 unique-constraint) so callers
+    // can detect them via instanceof/.code — wrapping in a plain Error here
+    // would strip the type and break idempotency handling.
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      throw error;
+    }
     throw new Error(`Failed to create transaction: ${error.message}`);
   }
 };

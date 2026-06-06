@@ -152,7 +152,14 @@ const start = async () => {
     await fastify.listen({ host: HOST, port });
     if (process.env.NODE_ENV === "production") {
       fastify.log.info(`Starting cron jobs...`);
-      fastify.cron.getJobByName("recurring transactions")?.start();
+      const jobName = "recurring transactions";
+      const job = fastify.cron.getJobByName(jobName);
+      if (!job) {
+        fastify.log.error(`Cron job "${jobName}" not found; cannot start it`);
+        throw new Error(`Cron job "${jobName}" not registered`);
+      }
+      job.start();
+      fastify.log.info(`Cron job "${jobName}" started`);
     }
   } catch (error) {
     fastify.log.error(error);
