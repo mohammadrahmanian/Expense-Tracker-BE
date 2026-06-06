@@ -6,7 +6,10 @@ import jwt from "jsonwebtoken";
 const EMAIL_CLAIM_NAMESPACE = "https://expensio/email";
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
-type EmailCacheEntry = { email: string; cachedAt: number };
+// Cache the resolved email per session, but bind it to the exact bearer token
+// it was derived from. A session can be reused with a different token (account
+// switch); keying on sessionId alone would hand back a stale email.
+type EmailCacheEntry = { email: string; token: string; cachedAt: number };
 const emailCache = new Map<string, EmailCacheEntry>();
 
 setInterval(() => {
@@ -26,14 +29,18 @@ const toolError = (text: string): ToolErrorResult => ({
   content: [{ type: "text", text }],
 });
 
-function extractEmailFromRequest(request: FastifyRequest): string | null {
+function extractBearerToken(request: FastifyRequest): string | null {
   const auth = request.headers.authorization;
   if (typeof auth !== "string") return null;
   const parts = auth.split(" ");
   if (parts.length < 2 || parts[0].toLowerCase() !== "bearer") return null;
+  return parts[1];
+}
+
+function emailFromToken(token: string): string | null {
   // The token is already verified by @platformatic/mcp's authorization layer
   // (JWKS + audience). We only need to decode for the email claim here.
-  const decoded = jwt.decode(parts[1]);
+  const decoded = jwt.decode(token);
   if (!decoded || typeof decoded !== "object") return null;
   const claims = decoded as Record<string, unknown>;
   const value = claims[EMAIL_CLAIM_NAMESPACE] ?? claims["email"];
@@ -53,12 +60,15 @@ export async function resolveMcpUser(
   request: FastifyRequest,
   sessionId: string | undefined
 ): Promise<ResolveUserResult> {
+  const token = extractBearerToken(request);
   let email: string | null = null;
 
-  if (sessionId) {
+  if (sessionId && token) {
     const cached = emailCache.get(sessionId);
     if (cached) {
-      if (Date.now() - cached.cachedAt < CACHE_TTL_MS) {
+      // Only trust the cache when it was derived from this exact token and is
+      // still fresh; otherwise drop it (stale or token/account switch).
+      if (cached.token === token && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
         email = cached.email;
       } else {
         emailCache.delete(sessionId);
@@ -67,9 +77,9 @@ export async function resolveMcpUser(
   }
 
   if (!email) {
-    email = extractEmailFromRequest(request);
-    if (email && sessionId) {
-      emailCache.set(sessionId, { email, cachedAt: Date.now() });
+    email = token ? emailFromToken(token) : null;
+    if (email && sessionId && token) {
+      emailCache.set(sessionId, { email, token, cachedAt: Date.now() });
     }
   }
 

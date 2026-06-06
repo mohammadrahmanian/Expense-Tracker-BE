@@ -41,6 +41,11 @@ export const createTransactionFromRecurringTransaction = async ({
       continue; // skip updating this recurring transaction
     }
 
+    // Stable across retries/concurrent runs: same rule + same occurrence maps
+    // to the same key, so the (userId, idempotencyKey) unique constraint blocks
+    // duplicate inserts for the same occurrence.
+    const idempotencyKey = `recurring:${recurringTransaction.id}:${recurringTransaction.nextOccurrence.toISOString()}`;
+
     await prisma.$transaction(async (tx) => {
       try {
         await createUserTransaction({
@@ -50,7 +55,7 @@ export const createTransactionFromRecurringTransaction = async ({
             title: recurringTransaction.title,
             description: recurringTransaction.description,
             type: recurringTransaction.type,
-            idempotencyKey: null,
+            idempotencyKey,
           },
           userId: recurringTransaction.userId,
           categoryId: recurringTransaction.categoryId,
