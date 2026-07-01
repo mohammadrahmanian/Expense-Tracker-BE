@@ -237,7 +237,7 @@ export const oauthModule: FastifyPluginAsync = async (fastify) => {
       reply,
     ) => {
       // Defense in depth on a cookie-authed, state-changing POST.
-      if (req.headers.origin && req.headers.origin !== frontendOrigin) {
+      if (req.headers.origin !== frontendOrigin) {
         return reply.code(403).send({ error: "forbidden_origin" });
       }
 
