@@ -19,8 +19,36 @@ model User {
   categories           Category[]
   transactions         Transaction[]
   RecurringTransaction RecurringTransaction[]
+  mcpRefreshTokens     McpRefreshToken[]
 
   @@index([email])
+}
+
+// OAuth client registered (via RFC 7591 dynamic client registration) by an LLM
+// that wants to connect to the MCP server. Public PKCE clients, so no secret.
+model McpOAuthClient {
+  id           String   @id @default(cuid())
+  clientId     String   @unique
+  clientName   String?
+  redirectUris String[]
+  createdAt    DateTime @default(now())
+}
+
+// Long-lived, revocable credential issued at the end of the OAuth flow and
+// rotated on every refresh. Access tokens are stateless JWTs; this row is what
+// a user can revoke to disconnect an agent.
+model McpRefreshToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique // sha256 of the opaque refresh token
+  clientId  String
+  scope     String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Category {
