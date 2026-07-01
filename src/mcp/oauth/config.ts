@@ -23,6 +23,40 @@ const stripTrailingSlash = (value: string): string => value.replace(/\/+$/, "");
 const normalizePem = (raw: string): string =>
   raw.includes("\\n") ? raw.replace(/\\n/g, "\n") : raw;
 
+// https, or http on loopback for local dev (mirrors the redirect_uri policy
+// enforced for OAuth clients in oauth/index.ts).
+const parseUrl = (envVar: string, value: string): URL => {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error(`${envVar} must be a valid URL, got: ${value}`);
+  }
+  const isLoopbackHttp =
+    url.protocol === "http:" &&
+    (url.hostname === "localhost" || url.hostname === "127.0.0.1");
+  if (url.protocol !== "https:" && !isLoopbackHttp) {
+    throw new Error(
+      `${envVar} must be https (or http on localhost/127.0.0.1 for local dev), got: ${value}`,
+    );
+  }
+  return url;
+};
+
+// Bare origin = no path, query, or fragment beyond "/". Required for the
+// issuer and frontend origin, which are compared/concatenated as exact
+// strings elsewhere (RFC 8414 metadata, redirect construction, Origin checks).
+const parseBareOrigin = (envVar: string, value: string): string => {
+  const stripped = stripTrailingSlash(value);
+  const url = parseUrl(envVar, stripped);
+  if (url.pathname !== "/" || url.search || url.hash) {
+    throw new Error(
+      `${envVar} must be a bare origin with no path/query/fragment, got: ${value}`,
+    );
+  }
+  return stripped;
+};
+
 let cached: OAuthConfig | null = null;
 
 export const getOAuthConfig = (): OAuthConfig => {
@@ -48,10 +82,15 @@ export const getOAuthConfig = (): OAuthConfig => {
     );
   }
 
+  // Validated but kept as the original string: unlike issuer/frontendOrigin,
+  // resourceUri is never string-compared/concatenated, so no need to strip it
+  // to a canonical bare-origin form.
+  parseUrl("MCP_RESOURCE_URI", resourceUri as string);
+
   cached = {
-    issuer: stripTrailingSlash(issuer as string),
+    issuer: parseBareOrigin("MCP_OAUTH_ISSUER", issuer as string),
     resourceUri: resourceUri as string,
-    frontendOrigin: stripTrailingSlash(frontendOrigin as string),
+    frontendOrigin: parseBareOrigin("MCP_OAUTH_FRONTEND_ORIGIN", frontendOrigin as string),
     privateKeyPem: normalizePem(privateKeyRaw as string),
   };
   return cached;
