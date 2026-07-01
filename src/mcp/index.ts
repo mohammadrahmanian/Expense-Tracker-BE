@@ -1,13 +1,14 @@
 import mcpPlugin from "@platformatic/mcp";
 import { FastifyPluginAsync } from "fastify";
 
+import { getOAuthConfig } from "./oauth/config";
 import { registerReadTools } from "./tools/queries";
 import { registerWriteTools } from "./tools/transactions";
 
 // Bridges the existing Fastify backend to the MCP wire protocol.
 // - Mounts POST /mcp + SSE (via @platformatic/mcp).
-// - Validates incoming Bearer tokens against Auth0's JWKS (resource-server
-//   role; Auth0 is the authorization server).
+// - Validates incoming Bearer tokens against OUR JWKS (resource-server role;
+//   the self-hosted OAuth server in src/mcp/oauth is the authorization server).
 // - The plugin itself serves the RFC 9728 .well-known/oauth-protected-resource
 //   document (and the /mcp-suffixed variant) when authorization is enabled,
 //   and its auth preHandler skips .well-known paths so discovery stays public.
@@ -25,16 +26,9 @@ export const mcpModule: FastifyPluginAsync = async (fastify) => {
     return;
   }
 
-  const rawDomain = process.env.AUTH0_DOMAIN;
-  const resourceUri = process.env.MCP_RESOURCE_URI;
-  if (!rawDomain || !resourceUri) {
-    throw new Error(
-      "MCP server enabled but AUTH0_DOMAIN and/or MCP_RESOURCE_URI are not set"
-    );
-  }
-  // Accept either bare host ("expensio.eu.auth0.com") or scheme-prefixed
-  // ("https://expensio.eu.auth0.com[/]") to avoid building https://https://...
-  const domain = rawDomain.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  // Self-hosted OAuth authorization server lives on this same origin
+  // (src/mcp/oauth). Throws here if the required OAuth env vars are missing.
+  const { issuer, resourceUri } = getOAuthConfig();
 
   // @platformatic/mcp's internal well-known plugin registers @fastify/cors a
   // second time (only when authorization is enabled). The outer @fastify/cors
@@ -83,10 +77,10 @@ export const mcpModule: FastifyPluginAsync = async (fastify) => {
     enableSSE: true,
     authorization: {
       enabled: true,
-      authorizationServers: [`https://${domain}/`],
+      authorizationServers: [issuer],
       resourceUri,
       tokenValidation: {
-        jwksUri: `https://${domain}/.well-known/jwks.json`,
+        jwksUri: `${issuer}/.well-known/jwks.json`,
         validateAudience: true,
       },
     },

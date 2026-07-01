@@ -14,6 +14,7 @@ import { verifyTokenPlugin } from "./src/plugins/auth";
 import { prismaPlugin } from "./src/plugins/prisma";
 
 import { mcpModule } from "./src/mcp";
+import { oauthModule } from "./src/mcp/oauth";
 
 import { categorySchema } from "./src/schemas/category";
 import { errorSchema } from "./src/schemas/error";
@@ -124,6 +125,7 @@ fastify.register(categoriesRoutes, { prefix: API_PREFIX });
 fastify.register(dashboardRoutes, { prefix: API_PREFIX });
 fastify.register(usersRoutes, { prefix: API_PREFIX });
 
+fastify.register(oauthModule);
 fastify.register(mcpModule);
 
 fastify.register(FastifyCron, {
