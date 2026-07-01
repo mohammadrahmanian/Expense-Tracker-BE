@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 
-import { McpOAuthClient, McpRefreshToken, PrismaClient } from "@prisma/client";
+import { McpOAuthClient, PrismaClient } from "@prisma/client";
 
 import {
   AUTH_CODE_TTL_MS,
@@ -138,24 +138,44 @@ export const issueRefreshToken = async (
   return token;
 };
 
-export const findActiveRefreshToken = async (
+// Atomically rotate a refresh token: revoke the presented one and mint its
+// replacement in a single transaction. The conditional updateMany is the race
+// gate — it revokes only the still-active row (matching client, not revoked,
+// not expired), and Postgres row locking guarantees exactly one concurrent
+// caller sees count === 1. Losers get count 0 and null, so a replayed/rotated
+// token can never mint a second set of tokens (no refresh-token-reuse TOCTOU).
+export const rotateRefreshToken = async (
   prisma: PrismaClient,
-  token: string,
-): Promise<McpRefreshToken | null> => {
-  const row = await prisma.mcpRefreshToken.findUnique({
-    where: { tokenHash: sha256(token) },
-  });
-  if (!row || row.revokedAt || row.expiresAt.getTime() <= Date.now()) {
-    return null;
-  }
-  return row;
-};
+  presentedToken: string,
+  clientId: string,
+): Promise<{ userId: string; scope: string | null; newToken: string } | null> =>
+  prisma.$transaction(async (tx) => {
+    const now = new Date();
+    const claimed = await tx.mcpRefreshToken.updateMany({
+      where: {
+        tokenHash: sha256(presentedToken),
+        clientId,
+        revokedAt: null,
+        expiresAt: { gt: now },
+      },
+      data: { revokedAt: now },
+    });
+    if (claimed.count !== 1) return null;
 
-export const revokeRefreshToken = (
-  prisma: PrismaClient,
-  id: string,
-): Promise<unknown> =>
-  prisma.mcpRefreshToken.update({
-    where: { id },
-    data: { revokedAt: new Date() },
+    const row = await tx.mcpRefreshToken.findUnique({
+      where: { tokenHash: sha256(presentedToken) },
+    });
+    if (!row) return null; // defensive: we just revoked it, so it must exist
+
+    const newToken = randomToken();
+    await tx.mcpRefreshToken.create({
+      data: {
+        tokenHash: sha256(newToken),
+        userId: row.userId,
+        clientId: row.clientId,
+        scope: row.scope,
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_SEC * 1000),
+      },
+    });
+    return { userId: row.userId, scope: row.scope, newToken };
   });

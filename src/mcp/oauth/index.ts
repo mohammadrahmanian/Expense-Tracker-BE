@@ -11,12 +11,11 @@ import {
   consumePendingRequest,
   createAuthCode,
   createPendingRequest,
-  findActiveRefreshToken,
   getClient,
   getPendingRequest,
   issueRefreshToken,
   registerClient,
-  revokeRefreshToken,
+  rotateRefreshToken,
   verifyPkce,
 } from "./store";
 
@@ -328,33 +327,29 @@ export const oauthModule: FastifyPluginAsync = async (fastify) => {
           return tokenError("invalid_request", "Missing required parameters");
         }
 
-        const existing = await findActiveRefreshToken(
+        // Atomically validate + revoke + issue the replacement in one
+        // transaction (guards against refresh-token-reuse races).
+        const rotated = await rotateRefreshToken(
           req.server.prisma,
           refreshToken,
+          clientId,
         );
-        if (!existing || existing.clientId !== clientId) {
+        if (!rotated) {
           return tokenError("invalid_grant", "Refresh token is invalid or expired");
         }
 
-        // Rotate: revoke the presented token, issue a fresh one.
-        await revokeRefreshToken(req.server.prisma, existing.id);
-        const newRefreshToken = await issueRefreshToken(req.server.prisma, {
-          userId: existing.userId,
-          clientId: existing.clientId,
-          scope: existing.scope,
-        });
         const accessToken = signAccessToken({
-          userId: existing.userId,
-          clientId: existing.clientId,
-          scope: existing.scope,
+          userId: rotated.userId,
+          clientId,
+          scope: rotated.scope,
         });
 
         return reply.send({
           access_token: accessToken,
           token_type: "Bearer",
           expires_in: ACCESS_TOKEN_TTL_SEC,
-          refresh_token: newRefreshToken,
-          scope: existing.scope ?? undefined,
+          refresh_token: rotated.newToken,
+          scope: rotated.scope ?? undefined,
         });
       }
 
